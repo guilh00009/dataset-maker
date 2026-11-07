@@ -1,0 +1,1202 @@
+[
+ {
+  "instruction": "Give three good words for the river.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Describe the book.",
+  "input": "",
+  "output": "The book is big. Many people love the book."
+ },
+ {
+  "instruction": "Write a short story about the food.",
+  "input": "",
+  "output": "Long ago, a girl looked at the food. The food was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the city.",
+  "input": "",
+  "output": "The city is my friend. I love the city."
+ },
+ {
+  "instruction": "Write a short story about the music.",
+  "input": "",
+  "output": "Long ago, a girl looked at the music. The music was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Give three good words for the coffee.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Describe the rain.",
+  "input": "",
+  "output": "The rain is big. Many people love the rain."
+ },
+ {
+  "instruction": "Why do people love the window?",
+  "input": "",
+  "output": "People love the window because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the door?",
+  "output": "The door is in the city, near the river."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the garden?",
+  "output": "The garden is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the game.",
+  "input": "",
+  "output": "The game is quiet. Many people love the game."
+ },
+ {
+  "instruction": "Describe the boat in one line.",
+  "input": "A small boat.",
+  "output": "A small boat, strong and full of life."
+ },
+ {
+  "instruction": "Tell me about the cake.",
+  "input": "",
+  "output": "The cake is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the garden.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Describe the river.",
+  "input": "",
+  "output": "The river is big. Many people love the river."
+ },
+ {
+  "instruction": "Say something kind about the tea.",
+  "input": "",
+  "output": "The tea is my friend. I love the tea."
+ },
+ {
+  "instruction": "Describe the song in one line.",
+  "input": "A small song.",
+  "output": "A small song, strong and full of life."
+ },
+ {
+  "instruction": "Say something kind about the forest.",
+  "input": "",
+  "output": "The forest is my friend. I love the forest."
+ },
+ {
+  "instruction": "Describe the coffee.",
+  "input": "",
+  "output": "The coffee is quiet. Many people love the coffee."
+ },
+ {
+  "instruction": "Why do people love the boat?",
+  "input": "",
+  "output": "People love the boat because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the fire?",
+  "output": "The fire is in the city, near the river."
+ },
+ {
+  "instruction": "Say something kind about the flower.",
+  "input": "",
+  "output": "The flower is my friend. I love the flower."
+ },
+ {
+  "instruction": "Tell me about the story.",
+  "input": "",
+  "output": "The story is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the water.",
+  "input": "",
+  "output": "The water is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Write a short story about the friend.",
+  "input": "",
+  "output": "Long ago, a girl looked at the friend. The friend was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the river.",
+  "input": "",
+  "output": "The river is my friend. I love the river."
+ },
+ {
+  "instruction": "Say something kind about the wind.",
+  "input": "",
+  "output": "The wind is my friend. I love the wind."
+ },
+ {
+  "instruction": "Write a short story about the mountain.",
+  "input": "",
+  "output": "Long ago, a girl looked at the mountain. The mountain was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the fire.",
+  "input": "",
+  "output": "The fire is my friend. I love the fire."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the wind?",
+  "output": "The wind is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the food.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Give three good words for the book.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Why do people love the star?",
+  "input": "",
+  "output": "People love the star because it is good and gives a good life."
+ },
+ {
+  "instruction": "Describe the music.",
+  "input": "",
+  "output": "The music is strong. Many people love the music."
+ },
+ {
+  "instruction": "Describe the story.",
+  "input": "",
+  "output": "The story is strong. Many people love the story."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the story?",
+  "output": "The story is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the music in one line.",
+  "input": "A small music.",
+  "output": "A small music, quiet and full of life."
+ },
+ {
+  "instruction": "Say something kind about the rain.",
+  "input": "",
+  "output": "The rain is my friend. I love the rain."
+ },
+ {
+  "instruction": "Tell me about the game.",
+  "input": "",
+  "output": "The game is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the tea.",
+  "input": "",
+  "output": "The tea is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Say something kind about the song.",
+  "input": "",
+  "output": "The song is my friend. I love the song."
+ },
+ {
+  "instruction": "Write a short story about the sun.",
+  "input": "",
+  "output": "Long ago, a girl looked at the sun. The sun was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Why do people love the forest?",
+  "input": "",
+  "output": "People love the forest because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the food?",
+  "output": "The food is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the garden in one line.",
+  "input": "A small garden.",
+  "output": "A small garden, quiet and full of life."
+ },
+ {
+  "instruction": "Tell me about the song.",
+  "input": "",
+  "output": "The song is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the house.",
+  "input": "",
+  "output": "The house is quiet. Many people love the house."
+ },
+ {
+  "instruction": "Write a short story about the flower.",
+  "input": "",
+  "output": "Long ago, a girl looked at the flower. The flower was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Why do people love the garden?",
+  "input": "",
+  "output": "People love the garden because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Describe the river in one line.",
+  "input": "A small river.",
+  "output": "A small river, strong and full of life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the tea?",
+  "output": "The tea is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the game?",
+  "input": "",
+  "output": "People love the game because it is good and gives a good life."
+ },
+ {
+  "instruction": "Describe the sun.",
+  "input": "",
+  "output": "The sun is strong. Many people love the sun."
+ },
+ {
+  "instruction": "Describe the wind in one line.",
+  "input": "A small wind.",
+  "output": "A small wind, big and full of life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the shop?",
+  "output": "The shop is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the rain?",
+  "input": "",
+  "output": "People love the rain because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Give three good words for the flower.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Give three good words for the forest.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Tell me about the friend.",
+  "input": "",
+  "output": "The friend is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the sun in one line.",
+  "input": "A small sun.",
+  "output": "A small sun, quiet and full of life."
+ },
+ {
+  "instruction": "Write a short story about the window.",
+  "input": "",
+  "output": "Long ago, a girl looked at the window. The window was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Describe the friend in one line.",
+  "input": "A small friend.",
+  "output": "A small friend, big and full of life."
+ },
+ {
+  "instruction": "Why do people love the food?",
+  "input": "",
+  "output": "People love the food because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Describe the window.",
+  "input": "",
+  "output": "The window is big. Many people love the window."
+ },
+ {
+  "instruction": "Describe the forest in one line.",
+  "input": "A small forest.",
+  "output": "A small forest, strong and full of life."
+ },
+ {
+  "instruction": "Tell me about the food.",
+  "input": "",
+  "output": "The food is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the forest.",
+  "input": "",
+  "output": "The forest is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the tree?",
+  "output": "The tree is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the sea in one line.",
+  "input": "A small sea.",
+  "output": "A small sea, quiet and full of life."
+ },
+ {
+  "instruction": "Tell me about the window.",
+  "input": "",
+  "output": "The window is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the tree in one line.",
+  "input": "A small tree.",
+  "output": "A small tree, big and full of life."
+ },
+ {
+  "instruction": "Give three good words for the fire.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Say something kind about the music.",
+  "input": "",
+  "output": "The music is my friend. I love the music."
+ },
+ {
+  "instruction": "Give three good words for the tree.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Say something kind about the house.",
+  "input": "",
+  "output": "The house is my friend. I love the house."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the star?",
+  "output": "The star is in the city, near the river."
+ },
+ {
+  "instruction": "Write a short story about the forest.",
+  "input": "",
+  "output": "Long ago, a girl looked at the forest. The forest was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the mountain?",
+  "output": "The mountain is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the house?",
+  "input": "",
+  "output": "People love the house because it is good and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the book?",
+  "output": "The book is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the song?",
+  "input": "",
+  "output": "People love the song because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Why do people love the cake?",
+  "input": "",
+  "output": "People love the cake because it is good and gives a good life."
+ },
+ {
+  "instruction": "Say something kind about the coffee.",
+  "input": "",
+  "output": "The coffee is my friend. I love the coffee."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the cake?",
+  "output": "The cake is in the city, near the river."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the sea?",
+  "output": "The sea is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the cake in one line.",
+  "input": "A small cake.",
+  "output": "A small cake, big and full of life."
+ },
+ {
+  "instruction": "Write a short story about the cake.",
+  "input": "",
+  "output": "Long ago, a girl looked at the cake. The cake was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Write a short story about the river.",
+  "input": "",
+  "output": "Long ago, a girl looked at the river. The river was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the game?",
+  "output": "The game is in the city, near the river."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the window?",
+  "output": "The window is in the city, near the river."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the water?",
+  "output": "The water is in the city, near the river."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the coffee?",
+  "output": "The coffee is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the shop in one line.",
+  "input": "A small shop.",
+  "output": "A small shop, big and full of life."
+ },
+ {
+  "instruction": "Why do people love the music?",
+  "input": "",
+  "output": "People love the music because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Write a short story about the tea.",
+  "input": "",
+  "output": "Long ago, a girl looked at the tea. The tea was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the flower?",
+  "output": "The flower is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the sun.",
+  "input": "",
+  "output": "The sun is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the tea in one line.",
+  "input": "A small tea.",
+  "output": "A small tea, strong and full of life."
+ },
+ {
+  "instruction": "Describe the door.",
+  "input": "",
+  "output": "The door is strong. Many people love the door."
+ },
+ {
+  "instruction": "Describe the tree.",
+  "input": "",
+  "output": "The tree is quiet. Many people love the tree."
+ },
+ {
+  "instruction": "Write a short story about the shop.",
+  "input": "",
+  "output": "Long ago, a girl looked at the shop. The shop was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Write a short story about the wind.",
+  "input": "",
+  "output": "Long ago, a girl looked at the wind. The wind was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Tell me about the flower.",
+  "input": "",
+  "output": "The flower is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the book in one line.",
+  "input": "A small book.",
+  "output": "A small book, strong and full of life."
+ },
+ {
+  "instruction": "Describe the food.",
+  "input": "",
+  "output": "The food is big. Many people love the food."
+ },
+ {
+  "instruction": "Why do people love the coffee?",
+  "input": "",
+  "output": "People love the coffee because it is good and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the song?",
+  "output": "The song is in the city, near the river."
+ },
+ {
+  "instruction": "Write a short story about the rain.",
+  "input": "",
+  "output": "Long ago, a girl looked at the rain. The rain was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Give three good words for the game.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Describe the moon in one line.",
+  "input": "A small moon.",
+  "output": "A small moon, strong and full of life."
+ },
+ {
+  "instruction": "Tell me about the wind.",
+  "input": "",
+  "output": "The wind is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the shop.",
+  "input": "",
+  "output": "The shop is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the door?",
+  "input": "",
+  "output": "People love the door because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the house?",
+  "output": "The house is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the boat.",
+  "input": "",
+  "output": "The boat is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the house in one line.",
+  "input": "A small house.",
+  "output": "A small house, big and full of life."
+ },
+ {
+  "instruction": "Write a short story about the story.",
+  "input": "",
+  "output": "Long ago, a girl looked at the story. The story was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Why do people love the mountain?",
+  "input": "",
+  "output": "People love the mountain because it is good and gives a good life."
+ },
+ {
+  "instruction": "Describe the tea.",
+  "input": "",
+  "output": "The tea is big. Many people love the tea."
+ },
+ {
+  "instruction": "Describe the star in one line.",
+  "input": "A small star.",
+  "output": "A small star, big and full of life."
+ },
+ {
+  "instruction": "Why do people love the tree?",
+  "input": "",
+  "output": "People love the tree because it is good and gives a good life."
+ },
+ {
+  "instruction": "Tell me about the book.",
+  "input": "",
+  "output": "The book is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the wind?",
+  "input": "",
+  "output": "People love the wind because it is good and gives a good life."
+ },
+ {
+  "instruction": "Give three good words for the music.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Give three good words for the door.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Tell me about the city.",
+  "input": "",
+  "output": "The city is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Write a short story about the fire.",
+  "input": "",
+  "output": "Long ago, a girl looked at the fire. The fire was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the food.",
+  "input": "",
+  "output": "The food is my friend. I love the food."
+ },
+ {
+  "instruction": "Describe the moon.",
+  "input": "",
+  "output": "The moon is big. Many people love the moon."
+ },
+ {
+  "instruction": "Why do people love the moon?",
+  "input": "",
+  "output": "People love the moon because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Write a short story about the coffee.",
+  "input": "",
+  "output": "Long ago, a girl looked at the coffee. The coffee was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Tell me about the star.",
+  "input": "",
+  "output": "The star is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Say something kind about the cake.",
+  "input": "",
+  "output": "The cake is my friend. I love the cake."
+ },
+ {
+  "instruction": "Write a short story about the house.",
+  "input": "",
+  "output": "Long ago, a girl looked at the house. The house was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Give three good words for the water.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Why do people love the city?",
+  "input": "",
+  "output": "People love the city because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Describe the mountain in one line.",
+  "input": "A small mountain.",
+  "output": "A small mountain, big and full of life."
+ },
+ {
+  "instruction": "Describe the fire in one line.",
+  "input": "A small fire.",
+  "output": "A small fire, quiet and full of life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the friend?",
+  "output": "The friend is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the star.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the rain?",
+  "output": "The rain is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the mountain.",
+  "input": "",
+  "output": "The mountain is quiet. Many people love the mountain."
+ },
+ {
+  "instruction": "Why do people love the book?",
+  "input": "",
+  "output": "People love the book because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Describe the city in one line.",
+  "input": "A small city.",
+  "output": "A small city, quiet and full of life."
+ },
+ {
+  "instruction": "Describe the friend.",
+  "input": "",
+  "output": "The friend is quiet. Many people love the friend."
+ },
+ {
+  "instruction": "Write a short story about the garden.",
+  "input": "",
+  "output": "Long ago, a girl looked at the garden. The garden was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Tell me about the river.",
+  "input": "",
+  "output": "The river is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the window in one line.",
+  "input": "A small window.",
+  "output": "A small window, strong and full of life."
+ },
+ {
+  "instruction": "Say something kind about the book.",
+  "input": "",
+  "output": "The book is my friend. I love the book."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the city?",
+  "output": "The city is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the song.",
+  "input": "",
+  "output": "The song is big. Many people love the song."
+ },
+ {
+  "instruction": "Write a short story about the sea.",
+  "input": "",
+  "output": "Long ago, a girl looked at the sea. The sea was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the sea.",
+  "input": "",
+  "output": "The sea is my friend. I love the sea."
+ },
+ {
+  "instruction": "Say something kind about the story.",
+  "input": "",
+  "output": "The story is my friend. I love the story."
+ },
+ {
+  "instruction": "Write a short story about the star.",
+  "input": "",
+  "output": "Long ago, a girl looked at the star. The star was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Tell me about the tree.",
+  "input": "",
+  "output": "The tree is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the friend.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Describe the food in one line.",
+  "input": "A small food.",
+  "output": "A small food, strong and full of life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the sun?",
+  "output": "The sun is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the star.",
+  "input": "",
+  "output": "The star is quiet. Many people love the star."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the music?",
+  "output": "The music is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the door.",
+  "input": "",
+  "output": "The door is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the boat.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Tell me about the house.",
+  "input": "",
+  "output": "The house is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the story?",
+  "input": "",
+  "output": "People love the story because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Why do people love the friend?",
+  "input": "",
+  "output": "People love the friend because it is good and gives a good life."
+ },
+ {
+  "instruction": "Give three good words for the window.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Say something kind about the shop.",
+  "input": "",
+  "output": "The shop is my friend. I love the shop."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the boat?",
+  "output": "The boat is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the forest.",
+  "input": "",
+  "output": "The forest is big. Many people love the forest."
+ },
+ {
+  "instruction": "Say something kind about the mountain.",
+  "input": "",
+  "output": "The mountain is my friend. I love the mountain."
+ },
+ {
+  "instruction": "Why do people love the water?",
+  "input": "",
+  "output": "People love the water because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Write a short story about the boat.",
+  "input": "",
+  "output": "Long ago, a girl looked at the boat. The boat was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Describe the shop.",
+  "input": "",
+  "output": "The shop is quiet. Many people love the shop."
+ },
+ {
+  "instruction": "Write a short story about the door.",
+  "input": "",
+  "output": "Long ago, a girl looked at the door. The door was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Describe the water.",
+  "input": "",
+  "output": "The water is strong. Many people love the water."
+ },
+ {
+  "instruction": "Describe the rain in one line.",
+  "input": "A small rain.",
+  "output": "A small rain, strong and full of life."
+ },
+ {
+  "instruction": "Say something kind about the door.",
+  "input": "",
+  "output": "The door is my friend. I love the door."
+ },
+ {
+  "instruction": "Say something kind about the garden.",
+  "input": "",
+  "output": "The garden is my friend. I love the garden."
+ },
+ {
+  "instruction": "Give three good words for the sea.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Describe the cake.",
+  "input": "",
+  "output": "The cake is quiet. Many people love the cake."
+ },
+ {
+  "instruction": "Why do people love the flower?",
+  "input": "",
+  "output": "People love the flower because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Tell me about the music.",
+  "input": "",
+  "output": "The music is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Say something kind about the window.",
+  "input": "",
+  "output": "The window is my friend. I love the window."
+ },
+ {
+  "instruction": "Why do people love the river?",
+  "input": "",
+  "output": "People love the river because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the forest?",
+  "output": "The forest is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the house.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Say something kind about the sun.",
+  "input": "",
+  "output": "The sun is my friend. I love the sun."
+ },
+ {
+  "instruction": "Tell me about the mountain.",
+  "input": "",
+  "output": "The mountain is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Say something kind about the moon.",
+  "input": "",
+  "output": "The moon is my friend. I love the moon."
+ },
+ {
+  "instruction": "Write a short story about the book.",
+  "input": "",
+  "output": "Long ago, a girl looked at the book. The book was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Describe the wind.",
+  "input": "",
+  "output": "The wind is quiet. Many people love the wind."
+ },
+ {
+  "instruction": "Describe the city.",
+  "input": "",
+  "output": "The city is strong. Many people love the city."
+ },
+ {
+  "instruction": "Give three good words for the cake.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Give three good words for the shop.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Write a short story about the moon.",
+  "input": "",
+  "output": "Long ago, a girl looked at the moon. The moon was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Give three good words for the sun.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Give three good words for the city.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Say something kind about the star.",
+  "input": "",
+  "output": "The star is my friend. I love the star."
+ },
+ {
+  "instruction": "Describe the sea.",
+  "input": "",
+  "output": "The sea is strong. Many people love the sea."
+ },
+ {
+  "instruction": "Describe the water in one line.",
+  "input": "A small water.",
+  "output": "A small water, quiet and full of life."
+ },
+ {
+  "instruction": "Give three good words for the song.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Say something kind about the tree.",
+  "input": "",
+  "output": "The tree is my friend. I love the tree."
+ },
+ {
+  "instruction": "Why do people love the tea?",
+  "input": "",
+  "output": "People love the tea because it is fresh and gives a good life."
+ },
+ {
+  "instruction": "Why do people love the sea?",
+  "input": "",
+  "output": "People love the sea because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Give three good words for the story.",
+  "input": "",
+  "output": "Warm, small and strong."
+ },
+ {
+  "instruction": "Describe the boat.",
+  "input": "",
+  "output": "The boat is big. Many people love the boat."
+ },
+ {
+  "instruction": "Write a short story about the song.",
+  "input": "",
+  "output": "Long ago, a girl looked at the song. The song was old, and it gave her a good life."
+ },
+ {
+  "instruction": "Write a short story about the game.",
+  "input": "",
+  "output": "Long ago, a girl looked at the game. The game was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Describe the flower.",
+  "input": "",
+  "output": "The flower is strong. Many people love the flower."
+ },
+ {
+  "instruction": "Say something kind about the water.",
+  "input": "",
+  "output": "The water is my friend. I love the water."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the moon?",
+  "output": "The moon is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the garden.",
+  "input": "",
+  "output": "The garden is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the wind.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Describe the door in one line.",
+  "input": "A small door.",
+  "output": "A small door, quiet and full of life."
+ },
+ {
+  "instruction": "Why do people love the fire?",
+  "input": "",
+  "output": "People love the fire because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Give three good words for the tea.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Tell me about the rain.",
+  "input": "",
+  "output": "The rain is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Give three good words for the mountain.",
+  "input": "",
+  "output": "Warm, old and strong."
+ },
+ {
+  "instruction": "Answer the question.",
+  "input": "Where is the river?",
+  "output": "The river is in the city, near the river."
+ },
+ {
+  "instruction": "Write a short story about the water.",
+  "input": "",
+  "output": "Long ago, a girl looked at the water. The water was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Give three good words for the rain.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Describe the flower in one line.",
+  "input": "A small flower.",
+  "output": "A small flower, quiet and full of life."
+ },
+ {
+  "instruction": "Write a short story about the city.",
+  "input": "",
+  "output": "Long ago, a girl looked at the city. The city was warm, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the game.",
+  "input": "",
+  "output": "The game is my friend. I love the game."
+ },
+ {
+  "instruction": "Describe the coffee in one line.",
+  "input": "A small coffee.",
+  "output": "A small coffee, big and full of life."
+ },
+ {
+  "instruction": "Tell me about the sea.",
+  "input": "",
+  "output": "The sea is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Why do people love the shop?",
+  "input": "",
+  "output": "People love the shop because it is good and gives a good life."
+ },
+ {
+  "instruction": "Say something kind about the friend.",
+  "input": "",
+  "output": "The friend is my friend. I love the friend."
+ },
+ {
+  "instruction": "Write a short story about the tree.",
+  "input": "",
+  "output": "Long ago, a girl looked at the tree. The tree was small, and it gave her a good life."
+ },
+ {
+  "instruction": "Say something kind about the boat.",
+  "input": "",
+  "output": "The boat is my friend. I love the boat."
+ },
+ {
+  "instruction": "Why do people love the sun?",
+  "input": "",
+  "output": "People love the sun because it is safe and gives a good life."
+ },
+ {
+  "instruction": "Describe the garden.",
+  "input": "",
+  "output": "The garden is strong. Many people love the garden."
+ },
+ {
+  "instruction": "Tell me about the fire.",
+  "input": "",
+  "output": "The fire is a bright thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the fire.",
+  "input": "",
+  "output": "The fire is strong. Many people love the fire."
+ },
+ {
+  "instruction": "Tell me about the coffee.",
+  "input": "",
+  "output": "The coffee is a cold thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Tell me about the moon.",
+  "input": "",
+  "output": "The moon is a beautiful thing. It is in the city, near the river."
+ },
+ {
+  "instruction": "Describe the game in one line.",
+  "input": "A small game.",
+  "output": "A small game, big and full of life."
+ },
+ {
+  "instruction": "Give three good words for the moon.",
+  "input": "",
+  "output": "Warm, warm and strong."
+ },
+ {
+  "instruction": "Describe the story in one line.",
+  "input": "A small story.",
+  "output": "A small story, quiet and full of life."
+ }
+]

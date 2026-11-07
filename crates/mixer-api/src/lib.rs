@@ -398,7 +398,7 @@ impl Api {
                 id = format!("{base} ({n})");
                 n += 1;
             }
-            st.recipe.sources.push(SourceEntry { id: id.clone(), location, weight: 1.0, count: None, mapping: None, enabled: true });
+            st.recipe.sources.push(SourceEntry { id: id.clone(), location, weight: 50.0, count: None, mapping: None, enabled: true });
             st.slots.push(Slot { status: "opening".into(), ..Default::default() });
             (st.recipe.sources.len() - 1, id)
         };

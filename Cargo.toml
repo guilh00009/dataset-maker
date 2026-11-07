@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/mixer-core", "crates/mixer-api", "crates/mixer-mock", "crates/mixer-cli"]
+members = ["crates/mixer-core", "crates/mixer-api", "crates/mixer-mock", "crates/mixer-cli", "app/src-tauri"]
 default-members = ["crates/mixer-core", "crates/mixer-api", "crates/mixer-mock", "crates/mixer-cli"]
 
 [workspace.package]

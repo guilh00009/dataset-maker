@@ -1,0 +1,20 @@
+[package]
+name = "dataset-mixer-app"
+description = "Dataset Mixer desktop app"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+default-run = "dataset-mixer-app"
+
+[lib]
+name = "dataset_mixer_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+mixer-api = { path = "../../crates/mixer-api" }
+serde_json = "1"
+tokio = { version = "1", features = ["sync"] }

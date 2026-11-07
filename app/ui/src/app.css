@@ -1,0 +1,13 @@
+/* App chrome only: the document scrollport. Everything else is ViraUI props. */
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--global-background); }
+.app-shell { display: grid; grid-template-columns: 16.5rem minmax(0, 1fr); height: 100dvh; }
+.app-nav { overflow-y: auto; border-inline-end: 1px solid var(--global-contrast); }
+.app-main { overflow-y: auto; scroll-behavior: smooth; }
+@media (max-width: 52rem) {
+  .app-shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .app-nav { border-inline-end: 0; border-block-end: 1px solid var(--global-contrast); }
+}
+
+/* left-aligned navigation entries */
+.app-nav .nav-item { justify-content: flex-start; inline-size: 100%; }
