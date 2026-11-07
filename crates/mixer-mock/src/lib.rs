@@ -17,6 +17,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock, RwLock};
 use std::time::Duration;
@@ -350,6 +351,82 @@ pub async fn serve(cfg: MockConfig, addr: SocketAddr) -> anyhow::Result<(SocketA
     let listener = tokio::net::TcpListener::bind(addr).await?;
     let bound = listener.local_addr()?;
     let app = router(state.clone());
+    let h = tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+    Ok((bound, state, h))
+}
+
+
+// ───────────────────────────── mock Hugging Face Hub ─────────────────────────────
+
+fn hf_root(dir: &std::path::Path, owner: &str, name: &str) -> PathBuf {
+    dir.join(format!("{owner}__{name}"))
+}
+
+fn walk_files(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<Value>) {
+    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    for e in rd.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            walk_files(root, &p, out);
+        } else if let (Ok(rel), Ok(m)) = (p.strip_prefix(root), e.metadata()) {
+            out.push(json!({"type": "file", "path": rel.to_string_lossy().replace('\\', "/"), "size": m.len()}));
+        }
+    }
+}
+
+async fn hf_tree(State(dir): State<PathBuf>, axum::extract::Path((owner, name, _rev)): axum::extract::Path<(String, String, String)>) -> Response {
+    let root = hf_root(&dir, &owner, &name);
+    if !root.exists() {
+        return err(StatusCode::NOT_FOUND, "Repository not found");
+    }
+    let mut out = Vec::new();
+    walk_files(&root, &root, &mut out);
+    Json(out).into_response()
+}
+
+async fn hf_resolve(
+    State(dir): State<PathBuf>,
+    axum::extract::Path((owner, name, _rev, path)): axum::extract::Path<(String, String, String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let file = hf_root(&dir, &owner, &name).join(&path);
+    if path.contains("..") || !file.is_file() {
+        return err(StatusCode::NOT_FOUND, "Entry not found");
+    }
+    let Ok(bytes) = std::fs::read(&file) else { return err(StatusCode::INTERNAL_SERVER_ERROR, "read error") };
+    let total = bytes.len();
+    let range = headers.get(header::RANGE).and_then(|v| v.to_str().ok()).and_then(|v| v.strip_prefix("bytes=")).and_then(|v| v.split('-').next()).and_then(|v| v.parse::<usize>().ok());
+    match range {
+        Some(start) if start >= total => (StatusCode::RANGE_NOT_SATISFIABLE, [(header::CONTENT_RANGE, format!("bytes */{total}"))]).into_response(),
+        Some(start) => (
+            StatusCode::PARTIAL_CONTENT,
+            [(header::CONTENT_RANGE, format!("bytes {start}-{}/{total}", total - 1)), (header::CONTENT_LENGTH, (total - start).to_string())],
+            bytes[start..].to_vec(),
+        )
+            .into_response(),
+        None => ([(header::CONTENT_LENGTH, total.to_string())], bytes).into_response(),
+    }
+}
+
+pub fn hf_router(dir: PathBuf) -> Router {
+    Router::new()
+        .route("/api/datasets/{owner}/{name}/tree/{rev}", get(hf_tree))
+        .route("/datasets/{owner}/{name}/resolve/{rev}/{*path}", get(hf_resolve))
+        .with_state(dir)
+}
+
+/// Like [`serve`], and also serves a fake Hugging Face Hub from `hf_dir`
+/// (files live in `<hf_dir>/<owner>__<name>/…`).
+pub async fn serve_full(cfg: MockConfig, addr: SocketAddr, hf_dir: Option<PathBuf>) -> anyhow::Result<(SocketAddr, Arc<MockState>, tokio::task::JoinHandle<()>)> {
+    let state = MockState::new(cfg);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let bound = listener.local_addr()?;
+    let mut app = router(state.clone());
+    if let Some(d) = hf_dir {
+        app = app.merge(hf_router(d));
+    }
     let h = tokio::spawn(async move {
         let _ = axum::serve(listener, app).await;
     });
