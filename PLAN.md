@@ -1,9 +1,22 @@
 # Dataset Mixer — Implementation Plan
 
-A desktop app (plus a headless CLI) for building LLM fine-tuning and training datasets. You choose the source datasets, set how much of each to take, shuffle them together, translate the result with an LLM if needed, and export it in a training format (ChatML and others).
+A **desktop app** (plus a headless CLI) for building LLM fine-tuning and training datasets. You choose the source datasets, set how much of each to take, shuffle them together, translate the result with an LLM if needed, and export it in a training format (ChatML and others).
 
 - **Language:** Rust for everything that touches data (loading, mixing, translation, export).
 - **UI:** a minimal design that uses the free **ViraUI Core** components and built-in theme.
+
+---
+
+## 0. Confirmed decisions
+
+| Topic | Decision |
+|---|---|
+| Platform | **Desktop only for now** (Tauri 2). Built so a **web version can be added later** without rewriting anything (§1.1). |
+| Translation LLM | **Any OpenAI-compatible server**, primarily **llama.cpp `llama-server`** run locally or on a remote machine. You set three things: **Base URL**, **Model name**, **API token** (optional, matches `llama-server --api-key`). |
+| Testing without your server | Development uses a **mock OpenAI-compatible server**, but the app always takes the **same real HTTP code path**. The mock is just another URL; production code has no mock-specific branches. When you point the app at your llama.cpp server, it works unchanged (§6.6). |
+| Input formats | **Automatic detection that works with almost any format.** You only point to the file or HF id. The manual mapping editor is just a fallback for when detection isn't confident (§3.2). |
+| Dataset scale | **Very large datasets**, e.g. **PIPPA** (`PygmalionAI/PIPPA`: 349 MB JSONL, ~26k conversations, ~1M messages, persona fields, `viewer: false`). Multi-GB inputs must work without loading everything into RAM (§3.3). |
+| Look | "Keep it beautiful": a minimal ViraUI design, light and dark. **Screenshots of every page** are delivered when it's ready (§10). |
 
 ---
 
@@ -13,28 +26,34 @@ ViraUI ships only as React components (`@viraui/react`, built on Base UI, React 
 
 | Layer | Tech | Responsibility |
 |---|---|---|
-| `crates/mixer-core` | Rust library | Data model, loaders, schema detection, mixing/shuffle, filters, exporters, translation engine. No UI code. |
-| `crates/mixer-cli` | Rust + `clap` | Headless runs of saved "recipes" (for scripting, servers, CI). |
+| `crates/mixer-core` | Rust library | Data model, loaders, schema detection, indexing, mixing/shuffle, filters, exporters, translation engine. No UI code. |
+| `crates/mixer-cli` | Rust + `clap` | Headless runs of saved "recipes" (`mixer run recipe.toml`), plus `mixer mock-llm` (§6.6). |
 | `app/src-tauri` | Rust + **Tauri 2** | Desktop shell. Exposes `mixer-core` to the UI as Tauri commands and progress events. |
 | `app/ui` | React 19 + Vite + TypeScript + `@viraui/react` | View only: forms, previews, progress. Holds no dataset data. Rust sends rows one page at a time. |
 
-**Why Tauri and not a pure-Rust UI (Leptos or Dioxus)?** The ViraUI components only work in React. A Leptos UI could reuse ViraUI's CSS tokens (`@viraui/foundation`), but every component would have to be rebuilt by hand. Tauri keeps 100% of the logic in Rust and still gets the real ViraUI components. The final binary is small (it uses the system webview, not a bundled Chromium).
+**Why Tauri and not a pure-Rust UI (Leptos or Dioxus)?** The ViraUI components only work in React. Tauri keeps all the logic in Rust, and the final binary is small (it uses the system webview).
 
-### Recipe = the single source of truth
-Every mix is a serializable `Recipe` (TOML/JSON). The UI edits it, and the CLI runs it unchanged (`mixer run recipe.toml`), so any result can be reproduced from its recipe and seed.
+### 1.1 Ready for a web version later (not built now)
+- The UI never calls Tauri directly. It talks to a small `Backend` TypeScript interface (`invoke(cmd, args)` and `subscribe(jobId, onEvent)`).
+- Shipped now: `TauriBackend`.
+- Later: an `HttpBackend` that talks to an `axum` server wrapping the same `mixer-core` (REST + Server-Sent Events). Adding the web version then means adding that server, with no UI rewrite.
+- A minimal dev-only version of this HTTP bridge is used to take the browser screenshots (§10). It is not shipped as a product.
+
+### 1.2 Recipe = the single source of truth
+Every mix is a serializable `Recipe` (TOML). The UI edits it, and the CLI runs it unchanged, so any result can be reproduced from its recipe and seed.
 
 ```toml
 seed = 42
 [[source]]
-id = "hf:teknium/OpenHermes-2.5"
-weight = 0.6            # or: count = 50000
-mapping = "auto"        # or explicit column mapping
+id = "hf-file:PygmalionAI/PIPPA/pippa_deduped.jsonl"
+weight = 0.5            # or: count = 20000
+mapping = "auto"        # auto-detects the PIPPA persona schema
 [[source]]
 id = "file:./my_chats.jsonl"
-weight = 0.4
+weight = 0.5
 [filters]
-min_turns = 1
-max_tokens = 4096
+min_turns = 3
+max_tokens = 8192
 dedup = "exact"
 [split]
 validation = 0.02
@@ -42,9 +61,13 @@ validation = 0.02
 format = "chatml"
 container = "jsonl"     # jsonl | parquet | json
 shard_size = 100000
-[translate]             # optional
-enabled = false
-target_language = "pt-BR"
+[translate]
+enabled = true
+base_url = "http://127.0.0.1:8080/v1"
+model = "qwen2.5-14b-instruct-q4_k_m"
+# token lives in the OS keychain, never in the recipe
+target_language = "Portuguese (Brazil)"
+concurrency = 4
 ```
 
 ---
@@ -57,68 +80,116 @@ pub struct Message { pub role: Role, pub content: String }
 pub struct Sample {
     pub id: u64,                 // xxh3 hash of the normalized content (dedup + translation cache key)
     pub source: SourceId,
-    pub kind: SampleKind,        // Chat(Vec<Message>) | Text(String)  (Text = pretraining/completion)
+    pub kind: SampleKind,        // Chat(Vec<Message>) | Text(String)
+    pub persona: Option<Persona>,// name / description / definitions / greeting (roleplay datasets)
     pub meta: serde_json::Map<String, Value>,
 }
 ```
 
-All inputs are normalized into `Sample`, and all exporters read from `Sample`. Supporting a new format means adding one adapter, not N×M converters.
+All inputs are normalized into `Sample`, and all exporters read from `Sample`. `Persona` is kept as structured data until export, so it can be translated field by field and rendered into a system prompt with an editable template.
 
 ---
 
 ## 3. Loading sources (`mixer-core::source`)
 
-**Local files:**
-- JSONL, JSON (array), CSV, Parquet, plain-text folders.
-- Libraries: `serde_json`, `csv`, `arrow` + `parquet`.
+### 3.1 Where data comes from
+- **Local files:** JSONL, JSON (array), CSV, Parquet, plain-text folders. Libraries: `serde_json` (`simd-json` for hot paths), `csv`, `arrow` + `parquet`.
+- **Hugging Face Hub**, two paths:
+  1. **Parquet path:** resolve through the datasets-server `/parquet` endpoint (for datasets that have the viewer).
+  2. **Direct repo file path:** list the repo's files and download a specific one (e.g. `pippa_deduped.jsonl`). This is **required for PIPPA** and other datasets with a loader script or no viewer.
 
-**Hugging Face Hub:**
-- Point to a dataset by repo id plus optional config, split, and revision.
-- Resolve its Parquet files through the datasets-server `/parquet` endpoint, then download them with the `hf-hub` crate (uses the local HF cache, supports gated datasets through an HF token).
+  Both download with `hf-hub`, which uses the local HF cache, shows progress, resumes interrupted downloads, and supports gated datasets through an HF token.
 
-**Schema auto-detection,** with a manual column-mapping override in the UI:
+### 3.2 Format auto-detection (works with almost any dataset)
+You just point the app at a file or a Hugging Face id. Detection is **automatic and heuristic**, not limited to a fixed list of known formats. A manual mapping editor exists only as a fallback.
 
-| Detected shape | Example keys |
-|---|---|
-| OpenAI messages | `messages[{role, content}]` |
-| ShareGPT | `conversations[{from, value}]` (`human/gpt/system`) |
-| Alpaca | `instruction`, `input`, `output` |
-| Prompt/completion | `prompt`, `completion` / `question`, `answer` |
-| Raw text | `text` |
+**Step 1: file format sniffing.** Uses the file's content and magic bytes, never the extension. Recognizes:
+- JSONL / NDJSON.
+- A JSON array, or a JSON object that wraps the rows (e.g. `{"data": [...]}`).
+- CSV/TSV (delimiter and header sniffed).
+- Parquet, Arrow/Feather.
+- Plain text.
+- Any of the above compressed with gzip, zstd, or bz2, or packed in a zip/tar archive.
 
-**Scaling to large datasets:**
-- Loaders are streaming iterators.
-- The mixer works on an **index** (`(source, file, row-group, offset)`) instead of on samples held in memory, so shuffling 10M rows needs only a few hundred MB.
-- Full rows are read only for preview, filtering, translation, and export.
+**Step 2: structure detection** on a sample of rows (about 200, spread across the file):
+1. **Flatten each row into paths** (`data.messages[].content`, …) and look for candidate fields, at any nesting depth.
+2. **Conversation detector:** find arrays of objects whose keys look like *role* and *content*, and score them by how well they fit.
+   - Role-like keys: `role`, `from`, `speaker`, `author`, `sender`, `name`, `is_human`, `is_user`, `is_bot`, …
+   - Content-like keys: `content`, `value`, `text`, `message`, `msg`, `utterance`, `response`, …
+   - Role values are mapped through a synonym table: `human`, `user`, `USER`, `prompter`, `you` → user; `gpt`, `bot`, `assistant`, `model`, `AI`, `char`, the character's name → assistant; `system` → system.
+   - Booleans like `is_human` are handled too.
+   - If roles are missing, the detector infers them from alternation and the greeting position.
+3. **Arrays of plain strings** (`["hi", "hello!", …]`) become alternating user/assistant turns.
+4. **Pair detector:** for flat rows, pick the best prompt-like field (`instruction`, `prompt`, `question`, `query`, `input`, `context`, `human`) and the best response-like field (`output`, `response`, `answer`, `completion`, `assistant`, `chosen`). An extra `input`/`context` field is folded into the prompt.
+5. **Preference datasets:** `chosen`/`rejected` rows (including when they hold full conversations) export the *chosen* side, or keep both for DPO export later.
+6. **Persona and system detector:** fields like `system`, `system_prompt`, `persona`, `character`, `char_name`, `bot_name`, `description`, `definitions`, `scenario`, `greeting`, `first_mes` go into `Persona`/system.
+7. **Pre-formatted text parser:** if the only content is a `text` field that already contains a chat template, it is **parsed back into turns**. Recognized templates: ChatML `<|im_start|>`, Llama 2/3, Mistral `[INST]`, Gemma, Phi, Metharme, Vicuna `USER:/ASSISTANT:`, Alpaca `### Instruction:/### Response:`, `Human:/Assistant:`. Otherwise it stays a raw-text sample.
+8. **Scoring:** every candidate interpretation gets a confidence score, based on coverage across the sampled rows and how well the types and roles fit. The best one wins.
+
+**Step 3: confirm.**
+- The source card shows the detected interpretation (e.g. *"Conversation · `conversation[].message` · role from `is_human` · persona from 4 fields · 98%"*) and a preview of three normalized samples.
+- If confidence is low (< 80%) or there are several close candidates, the **mapping editor opens pre-filled** with the top suggestions. You pick fields from dropdowns and see the result live.
+- The chosen mapping is saved in the recipe.
+
+**Tests:** a fixture corpus of 25+ real-world shapes (OpenAI messages, ShareGPT, PIPPA, Alpaca, Dolly, OASST, UltraChat, Capybara, SillyTavern / character-card logs, DPO pairs, pre-formatted ChatML/Llama text, CSV Q&A, nested JSON, …), each with its expected normalized output.
+
+Common shapes it will handle out of the box:
+
+| Shape | Example keys | Normalization |
+|---|---|---|
+| OpenAI messages | `messages[{role, content}]` | direct |
+| ShareGPT | `conversations[{from, value}]` | `human→user`, `gpt→assistant` |
+| **PIPPA / persona chat** | `bot_name`, `bot_description`, `bot_definitions`, `bot_greeting`, `conversation[{message, is_human}]` | `is_human` → user or assistant. The greeting becomes the first assistant turn. Persona fields go into `Persona`. |
+| Alpaca / Dolly | `instruction`, `input`/`context`, `output`/`response` | single turn |
+| Prompt/completion, Q&A | `prompt`/`completion`, `question`/`answer` | single turn |
+| Preference (DPO) | `prompt`, `chosen`, `rejected` | the chosen side |
+| Pre-formatted text | `text` containing ChatML / Llama / Alpaca markers | parsed into turns |
+| Raw text | `text` | `Text` sample |
+
+**PIPPA specifics:**
+- The persona becomes the system prompt through an editable template, e.g. `"{{bot_name}}: {{bot_description}}\n\n{{bot_definitions}}"`.
+- `{{char}}` and `{{user}}` placeholders can either be kept or substituted with names you set.
+- Character.AI's `END_OF_DIALOG` markers in the definitions are cleaned up.
+- An option drops conversations shorter than N turns (PIPPA recommends at least 3).
+
+### 3.3 Very large datasets
+- **Nothing is fully loaded into memory.**
+  - On first open, a JSONL file is **memory-mapped** (`memmap2`) and scanned with `memchr` to build a **line offset index** (`Vec<u64>`, 8 bytes per row).
+  - Parquet uses row-group and row offsets instead.
+  - The index is saved in the app cache, keyed by file size + mtime + hash of the first MB, so reopening a file is instant.
+- **Parallel parsing** with `rayon` for detection, filtering, stats, and export. Workers read rows by offset straight from the memory map.
+- **The mixer only reorders row positions** (`(source, offset)`), never full rows. Shuffling 10M rows needs about 160 MB.
+- **Preview** reads only the rows shown on screen, by offset, so it stays fast on huge files.
+- **Export** streams rows to disk in shuffled order, keeping memory flat.
+- **Progress, cancel, and errors:** every long step (download, index, filter, export, translate) runs as a background job with progress and a cancel button. Malformed lines are counted and logged, not fatal.
+- **Very long conversations** (PIPPA has some with hundreds of messages) are handled by `max_tokens` filtering, or optionally **split into windows** of at most N tokens that keep the system prompt.
 
 ---
 
 ## 4. Mixing and shuffling (`mixer-core::mix`)
 
-**Per-source quota:** set either a `weight` (a share of the total) or an absolute `count`. Strategies:
+**Per-source quota:** set either a `weight` or an absolute `count`. Strategies:
 - **Proportional:** use each source as-is.
 - **Fixed count:** sample N rows without replacement.
-- **Upsample:** repeat rows, with a cap (e.g. at most 3×).
-- **Temperature sampling:** `p_i ∝ n_i^(1/T)`, to balance large and small sources.
+- **Upsample:** repeat rows, with a cap.
+- **Temperature sampling:** `p_i ∝ n_i^(1/T)`.
 
 **Shuffle:**
-- A Fisher–Yates shuffle over the global index, using `rand_chacha::ChaCha8Rng` seeded from the recipe, so results are reproducible.
-- Optional "interleave" mode: round-robin across sources, then a local shuffle.
+- A Fisher–Yates shuffle over the global row index, using `ChaCha8Rng` seeded from the recipe. The same recipe and seed always give the same output.
+- Optional interleave mode.
 
-**Filters** (run before or after sampling, configurable):
-- Minimum/maximum number of turns.
-- Minimum/maximum tokens, counted with `tokenizers` (any HF tokenizer.json) or `tiktoken-rs`.
+**Filters:**
+- Minimum/maximum turns.
+- Minimum/maximum tokens, counted with `tokenizers` (any HF `tokenizer.json`) or a fast characters÷4 estimate.
 - Drop empty assistant turns.
-- Language filter, using `whatlang`.
+- Language detection (`whatlang`).
 - Regex include/exclude.
 
-**Dedup:**
-- Exact dedup by xxh3 hash.
-- Phase 2: near-duplicate removal with MinHash LSH.
+**Dedup:** exact, by xxh3 hash. MinHash near-dedup comes later.
 
 **Split:** train/validation by ratio, deterministic from the seed.
 
-**Stats:** rows per source (requested vs. actual), token histogram, average turns, and duplicates removed. These feed the UI meters.
+**Stats:** rows per source (requested vs. actual), token histogram, turns per conversation, duplicates and malformed rows removed.
 
 ---
 
@@ -129,60 +200,78 @@ Every format implements `trait Exporter { fn write(&mut self, s: &Sample) -> Res
 | Format | Output shape |
 |---|---|
 | **ChatML** | `{"text": "<\|im_start\|>system\n…<\|im_end\|>\n<\|im_start\|>user\n…"}` |
-| OpenAI / HF messages | `{"messages":[{"role":…,"content":…}]}` (works with TRL `SFTTrainer`, Axolotl, Unsloth) |
+| OpenAI / HF messages | `{"messages":[{"role":…,"content":…}]}` (works with TRL, Axolotl, Unsloth) |
 | ShareGPT | `{"conversations":[{"from":"human","value":…}]}` |
-| Alpaca | `{"instruction","input","output"}` (single-turn only, warns when it drops turns) |
+| Alpaca | `{"instruction","input","output"}` (warns when it drops turns) |
 | Llama 3 | `<\|begin_of_text\|><\|start_header_id\|>user<\|end_header_id\|>…<\|eot_id\|>` |
 | Mistral | `<s>[INST] … [/INST] …</s>` |
 | Gemma | `<start_of_turn>user\n…<end_of_turn>` |
 | Phi-3 | `<\|user\|>\n…<\|end\|>` |
+| Metharme (Pygmalion) | `<\|system\|>…<\|user\|>…<\|model\|>…` |
 | Prompt/completion | `{"prompt","completion"}` |
-| Raw text (pretraining) | `{"text": …}` or `.txt` |
-| **Custom template** | Any Jinja chat template, rendered with `minijinja`. It can load `chat_template` straight from a model's `tokenizer_config.json` on the Hub, so any model is supported. |
+| Raw text | `{"text": …}` or `.txt` |
+| **Custom template** | Any Jinja chat template, rendered with `minijinja`. It can load `chat_template` from a model's `tokenizer_config.json` on the Hub. |
 
 **Containers:** JSONL (default), Parquet, JSON, with optional sharding (`train-00000-of-00004.jsonl`).
 
-**Manifest:** each export writes a `manifest.json` containing the recipe, seed, per-source counts, and hashes, so any export can be traced back to how it was made.
-
-**Phase 3:** a "Push to Hugging Face Hub" option.
+**Manifest:** each export writes a `manifest.json` containing the recipe, seed, per-source counts, and hashes.
 
 ---
 
 ## 6. The **Translate** button (`mixer-core::translate`)
 
-Translates the whole mixed dataset (or one source) into a target language by sending many concurrent requests to an LLM API, within limits you set.
+### 6.1 Connection settings (Settings → LLM, also editable on the Translate page)
 
-### Providers
-- **OpenAI-compatible `/v1/chat/completions`:** one adapter covers OpenAI, OpenRouter, Groq, Together, DeepSeek, Mistral, Ollama, LM Studio, and vLLM. You only change the base URL.
-- **Anthropic Messages API:** native adapter.
-- HTTP is handled by `reqwest` and `tokio`.
-- API keys are stored in the OS keychain with the `keyring` crate. They are never written to recipes or logs.
+| Field | Example | Notes |
+|---|---|---|
+| **Base URL** | `http://127.0.0.1:8080/v1` (local llama.cpp) · `https://my-server:8080/v1` (remote) | Any OpenAI-compatible server. Paths are normalized so both `…/v1` and the bare host work. |
+| **Model name** | `qwen2.5-14b-instruct` | Sent as `model`. A dropdown is filled from `GET /v1/models`, and you can still type any name. |
+| **API token** | `sk-…` (optional) | Sent as `Authorization: Bearer …`. Stored in the OS keychain (`keyring`). Leave it empty if your llama.cpp server has no `--api-key`. |
 
-### Limits and throughput
+- **Test connection** button: calls `GET /v1/models`, then sends a tiny chat completion. It shows latency, tokens/sec, and the exact error message if something fails (unreachable, 401 bad token, unknown model).
+- **llama.cpp extras (optional):** when the server is llama.cpp, the app reads `GET /props` to find the number of parallel slots (`--parallel`) and suggests that as the concurrency. If `/props` doesn't exist (vLLM, OpenAI, etc.), the app just skips this.
+- **Request body:** standard `POST {base}/chat/completions` (`model`, `messages`, `temperature`, `max_tokens`, optional `response_format`), so the same code works with llama.cpp, vLLM, Ollama, LM Studio, OpenRouter, and OpenAI.
 
-| Setting | Implementation |
-|---|---|
-| Max concurrent requests | `tokio::sync::Semaphore` |
-| Requests/minute and tokens/minute | `governor` rate limiters (tokens are estimated before sending) |
-| Retries | Exponential backoff with jitter. Honors `Retry-After` on 429 and 5xx responses. |
-| Per-request timeout | Configurable |
-| Budget cap | Stops when estimated spend reaches a $ limit or a token limit |
+### 6.2 Limits and throughput
 
-### How a sample is translated
-1. **One request per conversation.** The conversation is sent as JSON, and the model must return the **same JSON structure** (same number of messages and the same roles), via JSON mode or a structured-output schema where the provider supports it.
-2. **Validation:** the role order must match, nothing may be empty, and the output must actually be in the target language (`whatlang` check). If validation fails, the sample is retried message by message. If it still fails, it is marked `failed` and left out of the export (or kept in the original language, if you choose that).
-3. **Content protection:** code blocks, inline code, URLs, `{placeholders}`, and LaTeX are swapped for tokens before sending and restored afterwards, so code is never translated.
-4. **Options:**
-   - Choose which roles to translate (e.g. skip the system prompt).
-   - Custom instructions (tone, glossary).
-   - Choose the model.
-   - Output mode: *replace* the original, or *bilingual* (keep both versions).
+| Setting | Default | Implementation |
+|---|---|---|
+| Max concurrent requests | 4, or the slot count from llama.cpp `/props` | `tokio::sync::Semaphore` |
+| Requests/minute, tokens/minute | off (local server) | `governor` rate limiters |
+| Retries | 5 | Exponential backoff with jitter. Honors `Retry-After` on 429 and 5xx. Retries on connection reset and timeout. |
+| Request timeout | 600 s | Long default for slow local generation |
+| Max output tokens | auto (about 2× the input) | Sent as `max_tokens` |
+| Budget cap | off | Optional cap in tokens (or $ if you enter a price) |
 
-### Reliability
-- **Resumable:** every finished sample is written to a SQLite journal (`rusqlite`), keyed by `(sample hash, target language, model)`. After a crash or cancel, a run picks up where it stopped, and re-running a mix never pays twice for the same sample.
-- **Pre-flight estimate:** before starting, a dialog shows the sample count, estimated input and output tokens, estimated cost (based on a per-model price you enter), and ETA.
-- **Live progress:** Tauri events report done, failed, and in-flight counts, tokens/sec, and spend so far. You can pause, resume, or cancel.
-- **Pipeline order:** by default, translation runs **after** mixing and filtering, so only the rows that will actually be exported are translated (much cheaper).
+### 6.3 How a sample is translated
+1. **Chunking:** a conversation is split into chunks that fit a configurable **context budget** (default 4096 input tokens, set to match the server's `--ctx-size`), keeping the order. Short conversations take one request. PIPPA-length ones take several.
+2. **Structured output:** each chunk is sent as a JSON array of `{role, content}`. The model must return an array with the **same length and roles**. If the server supports `response_format` with `json_schema`, it is used (llama.cpp enforces it with a grammar). Otherwise the app falls back to prompt instructions plus strict parsing.
+3. **Validation:** role count and order match, no empty messages, and the text is in the target language (`whatlang`).
+   - If validation fails, the chunk is retried message by message.
+   - If it still fails, the sample is marked `failed`. You choose whether failed samples are dropped or kept in the original language.
+4. **Content protection:** code blocks, inline code, URLs, `{{char}}`/`{{user}}`, `{placeholders}`, `*action*` markers (optional), and LaTeX are replaced with opaque tokens (`⟦0⟧`) before sending and restored afterwards. A sample whose response loses a token fails validation.
+5. **Persona fields** (`bot_description`, `bot_definitions`, `bot_greeting`) are translated too. Each **unique persona is translated only once** and reused (PIPPA has about 1k personas across 26k conversations).
+6. **Options:**
+   - Choose which roles to translate.
+   - Custom instructions or glossary (e.g. "keep character names").
+   - Temperature (default 0.2).
+   - Output mode: **replace** the original, or **bilingual** (keep both versions).
+
+### 6.4 Reliability for multi-day runs
+- **Resumable:** every finished chunk is written to a **SQLite journal** (`rusqlite`, WAL mode), keyed by `(sample hash, chunk index, target language, model, prompt version)`. After a crash, a reboot, or a cancel, a run continues exactly where it stopped, and nothing is sent twice.
+- **Pre-flight estimate dialog:** shows the number of samples and chunks, estimated input and output tokens, and an **ETA** based on the measured tokens/sec from Test connection.
+- **Try-first option:** translate a random 50 samples, review them in Preview, then start the full run.
+- **Live progress:** done, failed, and in-flight counts, tokens/sec, ETA, and the last error. Pause, resume, or cancel at any time.
+- **Pipeline order:** translation runs after mixing and filtering, so only rows that will actually be exported are translated.
+
+### 6.5 Request flow (per chunk)
+`queue → acquire semaphore → wait for rate limiter → protect placeholders → POST /chat/completions → parse JSON → validate → restore placeholders → write to journal → emit progress event`
+
+### 6.6 Mock server (for development; real code path)
+- `mixer mock-llm --port 8089` is a small `axum` server that implements `GET /v1/models`, `POST /v1/chat/completions`, and `GET /props`, just like llama.cpp.
+- It returns structurally valid "translations" (it prefixes each message and keeps placeholder tokens). It can **simulate** latency, 429 responses with `Retry-After`, 500 errors, timeouts, malformed JSON, and a required Bearer token.
+- In development and tests, the app is pointed at `http://127.0.0.1:8089/v1` like any other server. Integration tests run the whole translation pipeline against it, including killing and resuming a run.
+- **When you switch to your real setup**, you only change Base URL, Model, and Token in Settings. The real build has no other mock code path.
 
 ---
 
@@ -190,34 +279,34 @@ Translates the whole mixed dataset (or one source) into a target language by sen
 
 **Packages:**
 - `@viraui/react` and its peer `@base-ui/react`.
-- `@viraui/foundation` for the built-in theme (`vira.css`; `cinder`, `sunburst`, and `vira-condensed` also exist).
+- `@viraui/foundation` for the built-in `vira.css` theme.
 - `@viraui/react/preflight.css`.
 - **Geist Variable** font.
-- Import order at the root: theme CSS → fonts → preflight. Mount the Dialog, Tooltip, and Toast providers once in the app shell.
+- Import order: theme CSS → fonts → preflight. Mount the Dialog, Tooltip, and Toast providers once in the app shell.
 
 **Look**, taken from viraui.dev's own tokens:
-- Neutral oklab grayscale. Background `oklab(97.6% 0 0)` (light) or `oklab(0% 0 0)` (dark), switched automatically through `light-dark()`.
+- Neutral oklab grayscale: background `oklab(97.6% 0 0)` (light) or `oklab(0% 0 0)` (dark) through `light-dark()`.
 - Hairline borders (`--global-contrast`, about 11% alpha).
 - `--radius-m: .75rem`, spacing scale `--space-xs…5xl`.
 - Accent colors only for status (`--highlight-green`, `--highlight-yellow`, `--highlight-red`).
-- Lots of whitespace and one primary action per screen.
+- Lots of whitespace, one primary action per screen, and smooth but reduced-motion-aware transitions.
 
 > **Licensing note:** ViraUI is proprietary (`SEE LICENSE IN LICENSE`, terms at viraui.dev/terms-conditions). Core is free on npm. Use the published package and its built-in themes rather than copying the marketing site's CSS or assets. If this repo will be public or redistributed, read the terms first.
 
 **Layout:**
-- A sidebar app shell with a top-bar recipe name and a primary **Export** button.
-- Sidebar pages (each built from ViraUI components):
+- A sidebar app shell with a top-bar recipe name, a job indicator (background download, index, or translate progress), and a primary **Export** button.
+- Sidebar pages:
 
 | Page | Contents | ViraUI components |
 |---|---|---|
-| **Sources** | Add a source by dropping files or pasting an HF id. Each source gets a card showing its detected schema, row count, and a mapping editor. | `Surface`, `Stack`, `Grid`, `TextField`, `Select`, `Badge`, `Chip`, `Dialog`, `Skeleton` |
-| **Mix** | Per-source `Slider` for weight (or `NumberField` for count), a strategy `ToggleGroup`, seed, filters, split. Live `Meter` bars show the resulting composition. | `Slider`, `NumberField`, `ToggleGroup`, `Switch`, `Meter`, `Accordion` |
-| **Preview** | Paginated sample viewer that renders chats as bubbles. Tabs for *Raw / Formatted / Translated*. | `Tabs`, `Prose`, `Text`, `IconButton`, `Tooltip` |
-| **Translate** | Provider, model, target language, and limits (concurrency, RPM, TPM, budget). **Translate** button → estimate `Dialog` → live `LinearProgress`, stats, pause/cancel. | `Button`, `Select`, `Autocomplete`, `NumberField`, `LinearProgress`, `Gauge`, `Toast` |
-| **Export** | Format `Select` with a live preview of one formatted sample, container, sharding, output folder. | `Select`, `RadioGroup`, `Button`, `Toast` |
-| **Settings** | API keys (keychain), HF token, theme toggle, cache location. | `TextField`, `Switch`, `Fieldset` |
+| **Sources** | Add a source by dropping files, browsing, or pasting an HF id (then pick a file or split). Each source card shows the detected schema badge (e.g. *PIPPA persona*), row count, size, index progress, and a mapping editor. | `Surface`, `Stack`, `Grid`, `TextField`, `Select`, `Badge`, `Chip`, `Dialog`, `Skeleton`, `LinearProgress` |
+| **Mix** | Per-source weight `Slider` or count `NumberField`, strategy `ToggleGroup`, seed, filters, split. Live composition `Meter` bars and a token histogram. | `Slider`, `NumberField`, `ToggleGroup`, `Switch`, `Meter`, `Accordion` |
+| **Preview** | Virtualized, paginated sample viewer with chat bubbles and a persona header. Tabs for *Raw / Formatted / Translated*, with a side-by-side original vs. translation view. | `Tabs`, `Prose`, `Text`, `IconButton`, `Tooltip` |
+| **Translate** | Connection card (URL, model, token, **Test connection**), target language, limits, options. **Translate** button → estimate `Dialog` → live progress (`LinearProgress`, `Gauge` for tokens/sec, counters), pause/resume/cancel, failures list. | `Button`, `TextField`, `Autocomplete`, `NumberField`, `LinearProgress`, `Gauge`, `Toast`, `Dialog` |
+| **Export** | Format `Select` with a live preview of one formatted sample, container, sharding, output folder, Export button with progress. | `Select`, `Radio`, `Button`, `Toast` |
+| **Settings** | LLM connection defaults, HF token (keychain), theme (system/light/dark), cache location and size. | `TextField`, `Switch`, `Fieldset` |
 
-**UI ↔ Rust (Tauri commands):** `add_source`, `inspect_source`, `set_mapping`, `update_recipe`, `compute_mix` (returns stats), `preview(page, view)`, `estimate_translation`, `start_translation` / `pause` / `resume` / `cancel`, `export(recipe, path)`, `save_recipe` / `load_recipe`. Long jobs emit `progress://{job_id}` events.
+**UI ↔ Rust (`Backend` interface → Tauri commands):** `add_source`, `inspect_source`, `set_mapping`, `update_recipe`, `compute_mix`, `preview(page, view)`, `llm_test_connection`, `llm_list_models`, `estimate_translation`, `start_translation` / `pause` / `resume` / `cancel`, `export`, `save_recipe` / `load_recipe`, `list_jobs`. Long jobs emit `progress://{job_id}` events.
 
 ---
 
@@ -227,13 +316,13 @@ Translates the whole mixed dataset (or one source) into a target language by sen
 dataset-maker/
 ├─ Cargo.toml                # workspace
 ├─ crates/
-│  ├─ mixer-core/src/{model,source,detect,mix,filter,export,translate,recipe}.rs
-│  └─ mixer-cli/src/main.rs
+│  ├─ mixer-core/src/{model,source,detect,index,mix,filter,export,translate,recipe,jobs}.rs
+│  └─ mixer-cli/src/main.rs  # run, inspect, mock-llm
 ├─ app/
 │  ├─ src-tauri/             # Tauri 2 crate, depends on mixer-core
-│  └─ ui/                    # Vite + React 19 + @viraui/react
-├─ examples/recipes/*.toml
-└─ tests/fixtures/           # tiny sharegpt/alpaca/openai/parquet samples
+│  └─ ui/                    # Vite + React 19 + @viraui/react, Backend interface
+├─ examples/recipes/*.toml   # incl. pippa-chatml.toml, pippa-translate-ptbr.toml
+└─ tests/fixtures/           # small sharegpt/alpaca/openai/pippa/parquet samples
 ```
 
 ---
@@ -242,27 +331,28 @@ dataset-maker/
 
 | # | Deliverable | Done when |
 |---|---|---|
-| **M1 Core** | Data model, local loaders (JSONL/JSON/CSV/Parquet), schema detection, weighted mixing with seeded shuffle, ChatML and OpenAI-messages exporters, CLI `mixer run recipe.toml` | The same recipe and seed give a byte-identical output. Fixture tests pass. |
-| **M2 App shell** | Tauri + ViraUI shell, Sources, Mix, Preview, and Export pages wired to core | You can mix two local files and export ChatML from the GUI. |
-| **M3 Translate** | Provider adapters, semaphore and rate limits, retries, SQLite journal, estimate dialog, live progress, pause/resume | A 1,000-row translation over an OpenAI-compatible API and over a local Ollama model survives being killed mid-run and resumes without re-sending finished rows. |
-| **M4 Formats and Hub** | HF Hub sources, all template exporters, custom Jinja / `tokenizer_config.json` templates, Parquet output, sharding, manifest | Output matches `tokenizer.apply_chat_template` for the Llama 3, Mistral, Gemma, and Qwen fixtures. |
-| **M5 Polish** | Filters (tokens, language, regex), dedup, train/val split, stats, dark mode, installers (macOS, Windows, Linux) via Tauri bundler | Release builds produced in CI. |
-| Later | MinHash near-dedup, push to Hub, bilingual mixes, quality scoring with an LLM judge | — |
+| **M1 Core** | Data model, local loaders, memory-mapped JSONL offset index, heuristic auto-detection (§3.2) with the 25+ shape fixture corpus, weighted mixing with seeded shuffle, ChatML / OpenAI-messages / ShareGPT exporters, CLI `mixer run` | Same recipe and seed give byte-identical output. A 1 GB synthetic JSONL indexes and exports with memory use staying flat. |
+| **M2 Translate engine** | OpenAI-compatible client, semaphore, rate limits, retries, chunking, placeholder protection, persona dedup, SQLite journal, `mixer mock-llm` | The full pipeline passes against the mock with 429, 500, timeout, and malformed-JSON faults injected. A run killed midway resumes without re-sending finished chunks. |
+| **M3 App** | Tauri + ViraUI shell and all six pages wired to core, background jobs, Test connection | You can mix PIPPA with a local file, translate through the mock, and export ChatML entirely from the GUI. |
+| **M4 Formats and Hub** | HF Hub (Parquet path and direct-file path), all template exporters, custom Jinja templates, Parquet output, sharding, manifest | `PygmalionAI/PIPPA` downloads and is detected. Template output matches `apply_chat_template` for the Llama 3, Mistral, Gemma, and Qwen fixtures. |
+| **M5 Polish** | Filters, dedup, split, stats, conversation windowing, light and dark themes, Linux / macOS / Windows bundles | Screenshots delivered (§10). Release builds pass in CI. |
+| Later | Web version (`axum` + `HttpBackend`), MinHash near-dedup, push to Hub, quality scoring | — |
 
 ---
 
-## 10. Testing
+## 10. Verification and screenshots
 
-- **Unit tests:** every detector and exporter, using golden files in `tests/fixtures`.
-- **Property tests (`proptest`):** shuffling keeps every row, weights add up, and a split never puts the same row in both train and validation.
-- **Translation tests:** run against a mock HTTP server (`wiremock`). It injects 429 responses with `Retry-After`, timeouts, and malformed JSON, and checks that limits are respected, retries happen, and the journal resumes correctly.
-- **UI:** Playwright smoke test against `tauri dev`.
+- **Automated tests:**
+  - Unit tests for every detector and exporter, using golden files.
+  - Property tests (`proptest`): shuffling keeps every row, a split never puts the same row in both sets, and weights add up.
+  - Translation integration tests against `mixer mock-llm`, including fault injection and kill/resume.
+- **Real-server check:** if a llama.cpp binary and a small GGUF model can be downloaded in the build environment, the translation flow is also run once against a real `llama-server`. If not, the report says so plainly, and §6.6 explains why switching to your server only needs a Settings change.
+- **Screenshots** (Playwright, 2× scale, light and dark) of Sources (with PIPPA loaded), Mix, Preview (original vs. translation), Translate (connection test and a run in progress), Export, and Settings. The headless build environment has no display, so screenshots are taken of the same React UI in Chromium through the dev-only HTTP bridge (§1.1) against the real `mixer-core`. The desktop app renders the identical UI.
+- **Report:** what was built, test results, and anything that's still missing.
 
 ---
 
-## 11. Open questions
-
-1. Desktop app only, or should the UI also be servable in a browser? With an `axum` server mode, the same React UI can talk HTTP instead of Tauri IPC.
-2. Which LLM provider or model do you expect to use for translation most often? That determines which adapter and defaults to tune first.
-3. Is the main use SFT (chat) datasets, or do you also need pretraining (raw text) mixes at large scale (100M+ rows)? The latter changes the indexing design.
-4. Will the repo be public? See the ViraUI licensing note.
+## 11. Remaining open questions
+1. Default target language for the Translate page (Portuguese (Brazil)?).
+2. For PIPPA's system prompt: keep `{{char}}`/`{{user}}` as literal placeholders, or substitute real names at export?
+3. Will the repo be public? See the ViraUI licensing note.
