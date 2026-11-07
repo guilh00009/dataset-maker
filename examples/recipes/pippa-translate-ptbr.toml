@@ -1,0 +1,35 @@
+# PIPPA translated English -> Brazilian Portuguese with your own llama.cpp server.
+# Put the token (if any) in the MIXER_LLM_TOKEN environment variable, never in this file.
+name = "PIPPA pt-BR"
+seed = 42
+
+[[source]]
+id = "PIPPA"
+weight = 1.0
+count = 5000
+[source.location]
+kind = "hf"
+repo = "PygmalionAI/PIPPA"
+file = "pippa_deduped.jsonl"
+
+[filters]
+min_turns = 3
+max_tokens = 3000
+
+[persona]
+template = "{{system}}\nVocê é {{char_name}}. {{description}}\n\n{{definitions}}\n\nCenário: {{scenario}}"
+fallback_user_name = "Usuário"
+
+[translate]
+enabled = true
+base_url = "http://127.0.0.1:8080/v1"
+model = "your-model-name"
+source_language = "en"
+target_language = "pt-BR"
+concurrency = 4            # match llama-server --parallel
+context_budget = 4096      # tokens per request (about llama-server -c divided by --parallel)
+
+[export]
+format = "chatml"
+container = "jsonl"
+out_dir = "out/pippa-ptbr"

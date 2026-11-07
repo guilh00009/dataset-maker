@@ -34,14 +34,15 @@ pub enum Compression {
     Zstd,
 }
 
-/// A prepared (materialized + indexed) source.
+/// A prepared (materialized + indexed) source. Rows are read with positional reads, so memory
+/// stays flat however large the file is (only the 8-byte-per-row line index lives in RAM).
 pub struct Prepared {
     pub original: PathBuf,
     pub jsonl: PathBuf,
     pub format: FileFormat,
     pub compression: Compression,
     pub bytes: u64,
-    mmap: Mmap,
+    file: File,
     /// Start offset of every non-empty line.
     offsets: Vec<u64>,
 }
@@ -56,6 +57,26 @@ impl std::fmt::Debug for Prepared {
     }
 }
 
+#[cfg(unix)]
+fn read_at(f: &File, buf: &mut [u8], off: u64) -> std::io::Result<()> {
+    use std::os::unix::fs::FileExt;
+    f.read_exact_at(buf, off)
+}
+
+#[cfg(windows)]
+fn read_at(f: &File, mut buf: &mut [u8], mut off: u64) -> std::io::Result<()> {
+    use std::os::windows::fs::FileExt;
+    while !buf.is_empty() {
+        let n = f.seek_read(buf, off)?;
+        if n == 0 {
+            return Err(std::io::ErrorKind::UnexpectedEof.into());
+        }
+        buf = &mut buf[n..];
+        off += n as u64;
+    }
+    Ok(())
+}
+
 impl Prepared {
     pub fn len(&self) -> usize {
         self.offsets.len()
@@ -64,19 +85,34 @@ impl Prepared {
         self.offsets.is_empty()
     }
 
-    pub fn row_bytes(&self, i: usize) -> &[u8] {
-        let start = self.offsets[i] as usize;
-        let data = &self.mmap[..];
-        let end = memchr::memchr(b'\n', &data[start..]).map_or(data.len(), |p| start + p);
-        let mut slice = &data[start..end];
-        if slice.last() == Some(&b'\r') {
-            slice = &slice[..slice.len() - 1];
+    /// The bytes of one row (without its line ending).
+    pub fn row_bytes(&self, i: usize) -> Result<Vec<u8>> {
+        let start = self.offsets[i];
+        let end = self.offsets.get(i + 1).copied().unwrap_or(self.bytes);
+        let mut buf = vec![0u8; (end - start) as usize];
+        read_at(&self.file, &mut buf, start).with_context(|| format!("row {i}: read error"))?;
+        while buf.last().is_some_and(|b| b.is_ascii_whitespace()) {
+            buf.pop();
         }
-        slice
+        Ok(buf)
     }
 
     pub fn row_value(&self, i: usize) -> Result<Value> {
-        serde_json::from_slice(self.row_bytes(i)).with_context(|| format!("row {i}: invalid JSON"))
+        serde_json::from_slice(&self.row_bytes(i)?).with_context(|| format!("row {i}: invalid JSON"))
+    }
+}
+
+#[cfg(unix)]
+fn release_range(m: &Mmap, start: usize, end: usize) {
+    const PAGE: usize = 4096;
+    let s = start.div_ceil(PAGE) * PAGE;
+    let e = end / PAGE * PAGE;
+    if e > s {
+        // SAFETY: the mapping is read-only and file-backed; dropping its pages cannot change data
+        // (they are simply faulted in again from the file if touched later).
+        unsafe {
+            let _ = m.unchecked_advise_range(memmap2::UncheckedAdvice::DontNeed, s, e - s);
+        }
     }
 }
 
@@ -501,7 +537,8 @@ fn materialize(path: &Path, cache_dir: &Path, ctl: &Ctl, progress: &Progress) ->
 }
 
 /// Build the line offset index of a JSONL file (blank lines are skipped).
-fn build_offsets(data: &[u8], ctl: &Ctl, progress: &Progress) -> Result<Vec<u64>> {
+fn build_offsets(map: &Mmap, ctl: &Ctl, progress: &Progress) -> Result<Vec<u64>> {
+    let data: &[u8] = &map[..];
     let mut offsets: Vec<u64> = Vec::with_capacity(data.len() / 512 + 16);
     let mut pos = 0usize;
     let total = data.len() as u64;
@@ -514,6 +551,8 @@ fn build_offsets(data: &[u8], ctl: &Ctl, progress: &Progress) -> Result<Vec<u64>
         }
         pos = end + 1;
         if pos >= next_report {
+            #[cfg(unix)]
+            release_range(map, next_report.saturating_sub(64 << 20), pos);
             next_report = pos + (64 << 20);
             ctl.check()?;
             progress(Update::new("index", pos.min(data.len()) as u64, total, "Indexing rows"));
@@ -522,7 +561,7 @@ fn build_offsets(data: &[u8], ctl: &Ctl, progress: &Progress) -> Result<Vec<u64>
     Ok(offsets)
 }
 
-fn load_or_build_index(jsonl: &Path, data: &[u8], cache_dir: &Path, ctl: &Ctl, progress: &Progress) -> Result<Vec<u64>> {
+fn load_or_build_index(jsonl: &Path, file: &File, cache_dir: &Path, ctl: &Ctl, progress: &Progress) -> Result<Vec<u64>> {
     let key = cache_key(jsonl, "idx");
     let idx_path = cache_dir.join(format!("{key}.idx"));
     if let Ok(mut f) = File::open(&idx_path) {
@@ -535,7 +574,12 @@ fn load_or_build_index(jsonl: &Path, data: &[u8], cache_dir: &Path, ctl: &Ctl, p
             }
         }
     }
-    let offsets = build_offsets(data, ctl, progress)?;
+    // SAFETY: read-only mapping used for one sequential pass; cache files are never modified in place.
+    let map = unsafe { Mmap::map(file)? };
+    #[cfg(unix)]
+    let _ = map.advise(memmap2::Advice::Sequential);
+    let offsets = build_offsets(&map, ctl, progress)?;
+    drop(map);
     let tmp = idx_path.with_extension("idx.tmp");
     let mut w = BufWriter::new(File::create(&tmp)?);
     w.write_all(b"MIXIDX01")?;
@@ -555,23 +599,17 @@ pub fn prepare(path: &Path, cache_dir: &Path, ctl: &Ctl, progress: &Progress) ->
         bail!("{} does not exist", path.display());
     }
     let (jsonl, format, compression) = materialize(path, cache_dir, ctl, progress)?;
-    let mut f = File::open(&jsonl)?;
-    let bytes = f.seek(SeekFrom::End(0))?;
+    let mut file = File::open(&jsonl)?;
+    let bytes = file.seek(SeekFrom::End(0))?;
     if bytes == 0 {
         bail!("{} has no rows", path.display());
     }
-    // SAFETY: the mapped file is only read; we never modify cache files in place.
-    let mmap = unsafe { Mmap::map(&f)? };
-    #[cfg(unix)]
-    {
-        let _ = mmap.advise(memmap2::Advice::Random);
-    }
-    let offsets = load_or_build_index(&jsonl, &mmap[..], cache_dir, ctl, progress)?;
+    let offsets = load_or_build_index(&jsonl, &file, cache_dir, ctl, progress)?;
     if offsets.is_empty() {
         bail!("{} has no rows", path.display());
     }
     progress(Update::new("index", bytes, bytes, format!("{} rows", offsets.len())));
-    Ok(Prepared { original: path.to_path_buf(), jsonl, format, compression, bytes, mmap, offsets })
+    Ok(Prepared { original: path.to_path_buf(), jsonl, format, compression, bytes, file, offsets })
 }
 
 #[cfg(test)]

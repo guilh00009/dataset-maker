@@ -1,0 +1,28 @@
+# The real PIPPA from Hugging Face -> ChatML, character cards as system prompts, names substituted.
+name = "PIPPA to ChatML"
+seed = 42
+
+[[source]]
+id = "PIPPA"
+weight = 1.0
+[source.location]
+kind = "hf"
+repo = "PygmalionAI/PIPPA"
+file = "pippa_deduped.jsonl"
+
+[filters]
+min_turns = 3
+max_tokens = 8192
+dedup = "exact"
+
+[split]
+validation = 0.02
+
+[persona]
+substitute_names = true
+fallback_user_name = "User"
+
+[export]
+format = "chatml"
+container = "jsonl"
+out_dir = "out/pippa"

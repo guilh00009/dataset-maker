@@ -361,3 +361,24 @@ dataset-maker/
 
 ## 11. Open questions
 None. All of them are answered in §0.
+
+---
+
+## 12. Build status (end of the overnight build)
+
+Everything in §0–§10 is implemented and exercised by tests or by the screenshot flow, with these differences:
+
+| Plan said | What was built |
+|---|---|
+| `tokenizers` / tiktoken for token counts | A fast estimate (about 3.6 characters per token) for filters, budgets and ETAs. A real tokenizer can be added behind the same `est_tokens` function. |
+| zip/tar archives | Not unpacked. gzip and zstd are (also bzip2 is not). |
+| keychain only | OS keychain through the `keyring` crate, with a private `0600` file fallback when no keychain exists (the UI says which one is in use). |
+| Real `llama-server` check | **Not run here**: GitHub release downloads are blocked in the build sandbox. The client speaks the plain OpenAI-compatible API (`/v1/models`, `/v1/chat/completions`, llama.cpp `/props`) and is tested against a mock that implements the same API with injected faults. |
+| `hf-hub` crate | Own resumable downloader (token support, Range resume, retries), tested against a fake Hub; also verified against the **real Hugging Face Hub** with `PygmalionAI/PIPPA` (256.8 MB, 16,832 conversations, detected at 100%). |
+| Playwright smoke test of the desktop window | The same React UI is driven in headless Chromium against the real Rust backend (`scripts/demo.sh`), and the Tauri shell is built and launched under a virtual display. |
+| Installers (macOS/Windows/Linux) | Not built here (only `cargo build` of the Linux shell). `tauri build` produces them on each OS. |
+| MinHash near-dedup, push to Hub, LLM judge | Still "later", as planned. |
+
+Measured on a 1.5 GB / 418k-row PIPPA-shaped file (release build, 4 cores): full scan + filter + dedup + shuffle +
+export of 20,000 ChatML rows in about 4 s with **under 75 MB of memory**. 300 real PIPPA conversations were
+translated through the pipeline (chunked JSON requests, 8 in parallel, 3% injected 429s) with 0 failures.

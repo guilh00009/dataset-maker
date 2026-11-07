@@ -1,0 +1,20 @@
+# Mixes a huge PIPPA-style file down to 20k ChatML rows. Used for the stress test.
+name = "big test"
+seed = 1
+
+[[source]]
+id = "big"
+weight = 1.0
+count = 20000
+[source.location]
+kind = "file"
+path = "/tmp/big.jsonl"
+
+[filters]
+min_turns = 3
+dedup = "exact"
+
+[export]
+format = "chatml"
+container = "jsonl"
+out_dir = "/tmp/big-out"

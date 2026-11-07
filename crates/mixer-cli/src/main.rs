@@ -73,6 +73,9 @@ enum Cmd {
         rate_429: f64,
         #[arg(long, default_value_t = 0.0)]
         rate_500: f64,
+        /// Also alter unknown words, so any real text counts as translated (for stress tests).
+        #[arg(long)]
+        pseudo_translate: bool,
         /// Also serve a fake Hugging Face Hub from this directory (<owner>__<name>/…).
         #[arg(long)]
         hf_dir: Option<PathBuf>,
@@ -181,8 +184,8 @@ async fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Cmd::MockLlm { host, port, model, api_key, slots, latency_ms, ms_per_token, rate_429, rate_500, hf_dir } => {
-            let cfg = mixer_mock::MockConfig { model: model.clone(), api_key, slots, base_latency_ms: latency_ms, ms_per_token, rate_429, rate_500, ..Default::default() };
+        Cmd::MockLlm { host, port, model, api_key, slots, latency_ms, ms_per_token, rate_429, rate_500, pseudo_translate, hf_dir } => {
+            let cfg = mixer_mock::MockConfig { model: model.clone(), api_key, slots, base_latency_ms: latency_ms, ms_per_token, rate_429, rate_500, pseudo_unknown: pseudo_translate, ..Default::default() };
             let addr: std::net::SocketAddr = format!("{host}:{port}").parse()?;
             let (bound, _state, handle) = mixer_mock::serve_full(cfg, addr, hf_dir).await?;
             println!("Mock LLM listening on http://{bound}/v1  (model: {model})");

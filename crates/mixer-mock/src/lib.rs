@@ -47,6 +47,8 @@ pub struct MockConfig {
     pub rate_untranslated: f64,
     /// Behave like an older server that rejects `response_format`.
     pub reject_response_format: bool,
+    /// Also alter words the dictionary does not know (so arbitrary real text counts as "translated").
+    pub pseudo_unknown: bool,
     pub seed: u64,
 }
 
@@ -66,6 +68,7 @@ impl Default for MockConfig {
             rate_drop_item: 0.0,
             rate_untranslated: 0.0,
             reject_response_format: false,
+            pseudo_unknown: false,
             seed: 1,
         }
     }
@@ -172,6 +175,11 @@ fn dict() -> &'static std::collections::HashMap<&'static str, &'static str> {
 
 /// Word-by-word English → Portuguese. Keeps punctuation, markdown and `⟦n⟧` tokens.
 pub fn fake_translate(text: &str) -> String {
+    fake_translate_opts(text, false)
+}
+
+/// With `pseudo`, unknown words longer than three letters get a Portuguese-looking ending.
+pub fn fake_translate_opts(text: &str, pseudo: bool) -> String {
     static WORD: OnceLock<Regex> = OnceLock::new();
     let rx = WORD.get_or_init(|| Regex::new(r"[A-Za-z]+(?:'[A-Za-z]+)?").unwrap());
     rx.replace_all(text, |c: &regex::Captures| {
@@ -185,6 +193,7 @@ pub fn fake_translate(text: &str) -> String {
                     t.to_string()
                 }
             }
+            None if pseudo && w.chars().count() > 3 && w.chars().all(|c| c.is_ascii_alphabetic()) => format!("{}ão", w.trim_end_matches(|c| "aeiouy".contains(c))),
             None => w.to_string(),
         }
     })
@@ -274,7 +283,8 @@ async fn chat(State(s): State<Arc<MockState>>, headers: HeaderMap, Json(body): J
     let max_tokens = body.get("max_tokens").and_then(|m| m.as_u64()).unwrap_or(1024);
 
     let untranslated = s.chance(cfg.rate_untranslated);
-    let tr = |t: &str| if untranslated { t.to_string() } else { fake_translate(t) };
+    let pseudo = cfg.pseudo_unknown;
+    let tr = |t: &str| if untranslated { t.to_string() } else { fake_translate_opts(t, pseudo) };
 
     let json_mode = system.contains("\"translations\"");
     let mut content: String;

@@ -191,7 +191,7 @@ function MappingEditor({ src, open, onOpenChange }: { src: any; open: boolean; o
       <Dialog.Sheet title={`Mapping · ${src.id}`} description="Tell the mixer which fields hold the conversation. Auto-detection already picked the most likely one; change it only if it is wrong." maxContentWidth="76ch" showCloseButton>
         <Stack rowGap="l" fullWidth>
           {det.candidates.length > 1 ? (
-            <Pick label="Other interpretations found" value="" options={det.candidates.map((c: any, i: number) => ({ value: String(i), label: `${Math.round(c.confidence * 100)}% · ${c.summary}` }))} onChange={(v) => setM(JSON.parse(JSON.stringify(det.candidates[Number(v)])))} />
+            <Pick label="Other interpretations found" placeholder="Pick a suggestion…" value="" options={det.candidates.map((c: any, i: number) => ({ value: String(i), label: `${Math.round(c.confidence * 100)}% · ${c.summary}` }))} onChange={(v) => setM(JSON.parse(JSON.stringify(det.candidates[Number(v)])))} />
           ) : null}
 
           <Pick label="The data is" value={L.kind} options={kinds.map(([value, label]) => ({ value, label }))} onChange={changeKind} />

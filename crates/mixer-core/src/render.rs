@@ -23,13 +23,59 @@ pub fn has_placeholders(text: &str) -> bool {
     char_rx().is_match(text) || user_rx().is_match(text)
 }
 
+fn random_user_rx() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"(?i)\{\{\s*(?:random_)?user_(\d+)\s*\}\}").unwrap())
+}
+fn braced_rx() -> &'static Regex {
+    static R: OnceLock<Regex> = OnceLock::new();
+    R.get_or_init(|| Regex::new(r"\{\{\s*([^{}\n]{1,40}?)\s*\}\}").unwrap())
+}
+
+/// Names that placeholders stand for in one sample.
+pub struct Names<'a> {
+    pub char_name: &'a str,
+    pub user_name: &'a str,
+    /// Pool for `{{random_user_N}}` (N > 1); empty = "<user> N".
+    pub pool: &'a [String],
+    pub salt: u64,
+}
+
 /// Replace placeholder variants with real names.
 pub fn substitute(text: &str, char_name: &str, user_name: &str) -> String {
+    substitute_ext(text, &Names { char_name, user_name, pool: &[], salt: 0 })
+}
+
+/// Like [`substitute`], also handling SillyTavern-style `{{random_user_N}}` and `{{Name}}`
+/// (a name wrapped in double braces that equals the character or user name).
+pub fn substitute_ext(text: &str, n: &Names) -> String {
     if !text.contains('{') && !text.contains('<') && !text.contains('%') {
         return text.to_string();
     }
-    let t = char_rx().replace_all(text, regex::NoExpand(char_name));
-    user_rx().replace_all(&t, regex::NoExpand(user_name)).into_owned()
+    let t = char_rx().replace_all(text, regex::NoExpand(n.char_name));
+    let t = user_rx().replace_all(&t, regex::NoExpand(n.user_name));
+    let t = random_user_rx().replace_all(&t, |c: &regex::Captures| {
+        let k: u64 = c[1].parse().unwrap_or(1);
+        if k <= 1 {
+            n.user_name.to_string()
+        } else if n.pool.is_empty() {
+            format!("{} {k}", n.user_name)
+        } else {
+            n.pool[((n.salt.wrapping_add(k)) % n.pool.len() as u64) as usize].clone()
+        }
+    });
+    braced_rx()
+        .replace_all(&t, |c: &regex::Captures| {
+            let inner = c[1].trim();
+            if inner.eq_ignore_ascii_case(n.char_name) {
+                n.char_name.to_string()
+            } else if inner.eq_ignore_ascii_case(n.user_name) {
+                n.user_name.to_string()
+            } else {
+                c[0].to_string()
+            }
+        })
+        .into_owned()
 }
 
 /// Names that apply to this sample: (character, user).
@@ -127,7 +173,8 @@ pub fn render_system(sample: &Sample, opts: &PersonaOptions, char_name: &str, us
 pub fn finalize(sample: &Sample, opts: &PersonaOptions) -> Sample {
     let (c, u) = resolve_names(sample, opts);
     let sys = render_system(sample, opts, &c, &u);
-    let sub = |t: &str| if opts.substitute_names { substitute(t, &c, &u) } else { t.to_string() };
+    let names = Names { char_name: &c, user_name: &u, pool: &opts.user_name_pool, salt: sample.id };
+    let sub = |t: &str| if opts.substitute_names { substitute_ext(t, &names) } else { t.to_string() };
 
     let mut messages: Vec<Message> = Vec::with_capacity(sample.messages.len() + 1);
     if let Some(s) = sys {
@@ -241,6 +288,17 @@ mod tests {
         assert_eq!(f.messages[1].content, "Hi User, I am Rose.");
         assert_eq!(f.messages[3].content, "Rose says hi to User");
         assert!(!f.messages.iter().any(|m| has_placeholders(&m.content)));
+    }
+
+    #[test]
+    fn sillytavern_style_placeholders() {
+        let n = Names { char_name: "Alisa", user_name: "Gui", pool: &[], salt: 1 };
+        let t = "{{random_user_1}}: hi {{Alisa}}\n{{random_user_2}}: yo {{gui}} {{chat}}";
+        assert_eq!(substitute_ext(t, &n), "Gui: hi Alisa\nGui 2: yo Gui {{chat}}");
+        let pool = vec!["Ann".to_string(), "Bo".to_string()];
+        let n = Names { pool: &pool, ..n };
+        let out = substitute_ext("{{random_user_2}} {{random_user_3}}", &n);
+        assert!(out.split(' ').all(|w| w == "Ann" || w == "Bo"), "{out}");
     }
 
     #[test]

@@ -96,10 +96,10 @@ export function Code({ children, maxHeight = '22rem' }: { children: ReactNode; m
 export type Opt = { value: string; label: string };
 
 /** Select that shows option labels (not raw values) in the trigger. */
-export function Pick({ label, value, onChange, options, description, minWidth = '12rem' }: { label?: ReactNode; value: string; onChange: (v: string) => void; options: Opt[]; description?: ReactNode; minWidth?: string }) {
+export function Pick({ label, value, onChange, options, description, minWidth = '12rem', placeholder }: { label?: ReactNode; value: string; onChange: (v: string) => void; options: Opt[]; description?: ReactNode; minWidth?: string; placeholder?: string }) {
   return (
     <Stack minWidth={minWidth}>
-      <Select label={label} description={description} value={value} items={options} onValueChange={(v: any) => v != null && onChange(v)}>
+      <Select label={label} description={description} placeholder={placeholder} value={value} items={options} onValueChange={(v: any) => v != null && onChange(v)}>
         {options.map((o) => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
       </Select>
     </Stack>
