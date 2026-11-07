@@ -16,6 +16,7 @@ A **desktop app** (plus a headless CLI) for building LLM fine-tuning and trainin
 | Testing without your server | Development uses a **mock OpenAI-compatible server**, but the app always takes the **same real HTTP code path**. The mock is just another URL; production code has no mock-specific branches. When you point the app at your llama.cpp server, it works unchanged (§6.6). |
 | Input formats | **Automatic detection that works with almost any format.** You only point to the file or HF id. The manual mapping editor is just a fallback for when detection isn't confident (§3.2). |
 | Dataset scale | **Very large datasets**, e.g. **PIPPA** (`PygmalionAI/PIPPA`: 349 MB JSONL, ~26k conversations, ~1M messages, persona fields, `viewer: false`). Multi-GB inputs must work without loading everything into RAM (§3.3). |
+| Roleplay placeholders | `{{char}}` and `{{user}}` are **replaced with the real character name and user name** on export (§3.2). |
 | Look | "Keep it beautiful": a minimal ViraUI design, light and dark. **Screenshots of every page** are delivered when it's ready (§10). |
 
 ---
@@ -148,7 +149,10 @@ Common shapes it will handle out of the box:
 
 **PIPPA specifics:**
 - The persona becomes the system prompt through an editable template, e.g. `"{{bot_name}}: {{bot_description}}\n\n{{bot_definitions}}"`.
-- `{{char}}` and `{{user}}` placeholders can either be kept or substituted with names you set.
+- **`{{char}}` and `{{user}}` are replaced with real names on export (the default).** This applies to every text field: the system prompt, definitions, greeting, and all messages. The same rule applies to any persona dataset with these placeholders, not just PIPPA. Name variants `{{Char}}`, `{{CHAR}}`, `<BOT>`, `<USER>`, and `{char}` are recognized too.
+  - **`{{char}}`** becomes the character's real name from the dataset (`bot_name` in PIPPA, or `char_name` / `name` / `character` in other datasets, found by auto-detection).
+  - **`{{user}}`** becomes the user's real name when the dataset has one (e.g. `user_name`, the `name` on user turns in SillyTavern-style logs, or a persona field). PIPPA has no user-name field, so a **fallback name** is used. It's set in the Mix page and defaults to `User`. There's an optional **"random name per conversation"** pool so the model doesn't learn one fixed name.
+  - Names are **never translated:** placeholders stay protected during translation (§6.3) and are replaced only at export, so a name like "Rose" isn't turned into "Rosa".
 - Character.AI's `END_OF_DIALOG` markers in the definitions are cleaned up.
 - An option drops conversations shorter than N turns (PIPPA recommends at least 3).
 
@@ -249,7 +253,7 @@ Every format implements `trait Exporter { fn write(&mut self, s: &Sample) -> Res
 3. **Validation:** role count and order match, no empty messages, and the text is in the target language (`whatlang`).
    - If validation fails, the chunk is retried message by message.
    - If it still fails, the sample is marked `failed`. You choose whether failed samples are dropped or kept in the original language.
-4. **Content protection:** code blocks, inline code, URLs, `{{char}}`/`{{user}}`, `{placeholders}`, `*action*` markers (optional), and LaTeX are replaced with opaque tokens (`⟦0⟧`) before sending and restored afterwards. A sample whose response loses a token fails validation.
+4. **Content protection:** code blocks, inline code, URLs, `{{char}}`/`{{user}}` and the character/user names themselves (replaced with real names only at export, §3.2), `{placeholders}`, `*action*` markers (optional), and LaTeX are replaced with opaque tokens (`⟦0⟧`) before sending and restored afterwards. A sample whose response loses a token fails validation.
 5. **Persona fields** (`bot_description`, `bot_definitions`, `bot_greeting`) are translated too. Each **unique persona is translated only once** and reused (PIPPA has about 1k personas across 26k conversations).
 6. **Options:**
    - Choose which roles to translate.
@@ -354,5 +358,4 @@ dataset-maker/
 
 ## 11. Remaining open questions
 1. Default target language for the Translate page (Portuguese (Brazil)?).
-2. For PIPPA's system prompt: keep `{{char}}`/`{{user}}` as literal placeholders, or substitute real names at export?
-3. Will the repo be public? See the ViraUI licensing note.
+2. Will the repo be public? See the ViraUI licensing note.
