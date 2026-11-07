@@ -128,6 +128,7 @@ pub struct Translator {
     structured_ok: AtomicBool,
     fatal: Mutex<Option<String>>,
     budget_hit: AtomicBool,
+    cache_only: AtomicBool,
     fields: Mutex<HashMap<u64, Arc<OnceCell<std::result::Result<String, String>>>>>,
 }
 
@@ -157,8 +158,20 @@ impl Translator {
             cfg,
             fatal: Mutex::new(None),
             budget_hit: AtomicBool::new(false),
+            cache_only: AtomicBool::new(false),
             fields: Mutex::new(HashMap::new()),
         }))
+    }
+
+    /// A translator that only reads the journal and never calls the server (used by the preview).
+    pub fn new_cache_only(recipe: &Recipe, journal: Arc<Journal>) -> Result<Arc<Self>> {
+        let mut r = recipe.clone();
+        if r.translate.base_url.trim().is_empty() {
+            r.translate.base_url = "http://127.0.0.1:1/v1".into();
+        }
+        let t = Self::new(&r, None, journal, Ctl::new())?;
+        t.cache_only.store(true, Ordering::Relaxed);
+        Ok(t)
     }
 
     pub fn snapshot(&self) -> StatsSnapshot {
@@ -406,6 +419,12 @@ impl Translator {
                 }
                 None => todo.push(i),
             }
+        }
+        if self.cache_only.load(Ordering::Relaxed) {
+            for i in todo {
+                results[i] = Some(Err("not translated yet".into()));
+            }
+            return results.into_iter().map(|r| r.unwrap_or_else(|| Err("not translated yet".into()))).collect();
         }
         let budget = self.payload_budget();
         let mut chunks: Vec<Vec<usize>> = Vec::new();

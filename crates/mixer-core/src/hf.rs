@@ -132,6 +132,17 @@ pub async fn list_files(repo: &str, revision: Option<&str>, token: &Option<Strin
     Ok(out)
 }
 
+/// Fetch a small text file of a Hub repository (e.g. a model's `tokenizer_config.json`).
+pub async fn fetch_text(repo_type_path: &str, repo: &str, file: &str, token: &Option<String>) -> Result<String> {
+    let c = client(Duration::from_secs(60))?;
+    let url = format!("{}/{}{repo}/resolve/main/{file}", endpoint(), repo_type_path);
+    let resp = auth(c.get(&url), token).send().await.with_context(|| format!("cannot reach {}", endpoint()))?;
+    if !resp.status().is_success() {
+        bail!(explain(resp.status(), repo, token.is_some()));
+    }
+    Ok(resp.text().await?)
+}
+
 /// Files that look like data (what the UI offers in the picker).
 pub fn is_data_file(path: &str) -> bool {
     let p = path.to_lowercase();
