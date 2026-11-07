@@ -16,6 +16,8 @@ A **desktop app** (plus a headless CLI) for building LLM fine-tuning and trainin
 | Testing without your server | Development uses a **mock OpenAI-compatible server**, but the app always takes the **same real HTTP code path**. The mock is just another URL; production code has no mock-specific branches. When you point the app at your llama.cpp server, it works unchanged (§6.6). |
 | Input formats | **Automatic detection that works with almost any format.** You only point to the file or HF id. The manual mapping editor is just a fallback for when detection isn't confident (§3.2). |
 | Dataset scale | **Very large datasets**, e.g. **PIPPA** (`PygmalionAI/PIPPA`: 349 MB JSONL, ~26k conversations, ~1M messages, persona fields, `viewer: false`). Multi-GB inputs must work without loading everything into RAM (§3.3). |
+| Translation default | **English → Portuguese (Brazil)**: source `en`, target `pt-BR`, both changeable on the Translate page. Character and user **names are never translated**. |
+| Usage / licensing | **Private, personal use only.** The ViraUI Core free tier is fine for this. |
 | Roleplay placeholders | `{{char}}` and `{{user}}` are **replaced with the real character name and user name** on export (§3.2). |
 | Look | "Keep it beautiful": a minimal ViraUI design, light and dark. **Screenshots of every page** are delivered when it's ready (§10). |
 
@@ -67,7 +69,8 @@ enabled = true
 base_url = "http://127.0.0.1:8080/v1"
 model = "qwen2.5-14b-instruct-q4_k_m"
 # token lives in the OS keychain, never in the recipe
-target_language = "Portuguese (Brazil)"
+source_language = "en"
+target_language = "pt-BR"
 concurrency = 4
 ```
 
@@ -295,7 +298,7 @@ Every format implements `trait Exporter { fn write(&mut self, s: &Sample) -> Res
 - Accent colors only for status (`--highlight-green`, `--highlight-yellow`, `--highlight-red`).
 - Lots of whitespace, one primary action per screen, and smooth but reduced-motion-aware transitions.
 
-> **Licensing note:** ViraUI is proprietary (`SEE LICENSE IN LICENSE`, terms at viraui.dev/terms-conditions). Core is free on npm. Use the published package and its built-in themes rather than copying the marketing site's CSS or assets. If this repo will be public or redistributed, read the terms first.
+> **Licensing note:** ViraUI is proprietary, and Core is free on npm. This project is for private use, so the free tier is fine. The app uses the published package and its built-in themes, not the marketing site's own files.
 
 **Layout:**
 - A sidebar app shell with a top-bar recipe name, a job indicator (background download, index, or translate progress), and a primary **Export** button.
@@ -356,6 +359,5 @@ dataset-maker/
 
 ---
 
-## 11. Remaining open questions
-1. Default target language for the Translate page (Portuguese (Brazil)?).
-2. Will the repo be public? See the ViraUI licensing note.
+## 11. Open questions
+None. All of them are answered in §0.
