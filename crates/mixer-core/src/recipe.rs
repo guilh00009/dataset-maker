@@ -443,6 +443,9 @@ pub struct TranslateOptions {
     pub max_retries: u32,
     #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
+    /// First retry delay; doubles on every further attempt (capped at 60 s).
+    #[serde(default = "default_backoff")]
+    pub retry_backoff_ms: u64,
     #[serde(default = "default_temp")]
     pub temperature: f32,
     /// Max estimated input tokens per request.
@@ -489,6 +492,9 @@ fn default_retries() -> u32 {
 fn default_timeout() -> u64 {
     600
 }
+fn default_backoff() -> u64 {
+    1000
+}
 fn default_temp() -> f32 {
     0.2
 }
@@ -521,6 +527,7 @@ impl Default for TranslateOptions {
             tokens_per_minute: 0,
             max_retries: default_retries(),
             timeout_secs: default_timeout(),
+            retry_backoff_ms: default_backoff(),
             temperature: default_temp(),
             context_budget: default_ctx(),
             max_output_tokens: 0,

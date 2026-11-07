@@ -37,4 +37,6 @@ xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
 zstd = "0.14.3"
 
 [dev-dependencies]
+mixer-mock = { path = "../mixer-mock" }
 tempfile = "3.27.0"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "time"] }

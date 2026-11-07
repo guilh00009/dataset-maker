@@ -7,3 +7,4 @@ pub mod model;
 pub mod recipe;
 pub mod render;
 pub mod source;
+pub mod translate;
