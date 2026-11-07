@@ -1,0 +1,9 @@
+/target
+node_modules
+dist
+.vite
+*.log
+/app/src-tauri/gen
+/app/src-tauri/target
+/out
+.DS_Store

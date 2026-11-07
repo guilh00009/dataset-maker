@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/mixer-core", "crates/mixer-api", "crates/mixer-mock", "crates/mixer-cli"]
+default-members = ["crates/mixer-core", "crates/mixer-api", "crates/mixer-mock", "crates/mixer-cli"]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+
+[profile.release]
+lto = "thin"
+codegen-units = 8
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+[profile.dev.package."*"]
+opt-level = 2

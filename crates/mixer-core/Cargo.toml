@@ -1,0 +1,40 @@
+[package]
+name = "mixer-core"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+arrow-array = "60.1.0"
+arrow-json = "60.1.0"
+arrow-schema = "60.1.0"
+bytes = "1.12.1"
+csv = "1.4.0"
+dirs = "7.0.0"
+flate2 = "1.1.11"
+futures = "0.3.34"
+futures-util = "0.3.34"
+governor = "0.10.4"
+memchr = "2.8.3"
+memmap2 = "0.9.12"
+minijinja = { version = "3.0.5", features = ["serde", "json", "loop_controls", "preserve_order"] }
+minijinja-contrib = { version = "3.0.5", features = ["pycompat"] }
+parquet = { version = "60.1.0", features = ["arrow", "snap", "zstd", "flate2"] }
+rand = "0.10.3"
+rand_chacha = "0.10.0"
+rayon = "1.12.0"
+regex = "1.13.1"
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls", "stream"] }
+rusqlite = { version = "0.41.1", features = ["bundled"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+thiserror = "2.0.21"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
+toml = "1.2.1"
+whatlang = "0.18.0"
+xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
+zstd = "0.14.3"
+
+[dev-dependencies]
+tempfile = "3.27.0"
