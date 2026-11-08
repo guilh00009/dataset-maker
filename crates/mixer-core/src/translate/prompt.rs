@@ -73,7 +73,7 @@ pub fn language(code: &str) -> Language {
     Language { name: raw.to_string(), detect: whatlang::Lang::from_code(&lower) }
 }
 
-pub fn system_prompt(src: &Language, tgt: &Language, instructions: &str, glossary: &str, json_mode: bool) -> String {
+pub fn system_prompt(src: &Language, tgt: &Language, instructions: &str, glossary: &str, json_mode: bool, no_think: bool) -> String {
     let mut s = format!(
         "You are a professional translator. Translate the text from {} to {}.\n\
          Rules:\n\
@@ -105,6 +105,9 @@ pub fn system_prompt(src: &Language, tgt: &Language, instructions: &str, glossar
         s.push_str(instructions.trim());
         s.push('\n');
     }
+    if no_think {
+        s.push_str("\n/no_think\n");
+    }
     s
 }
 
@@ -134,12 +137,28 @@ pub fn json_schema() -> Value {
 
 fn think_rx() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
-    R.get_or_init(|| Regex::new(r"(?s)<think>.*?</think>|^.*?</think>").unwrap())
+    R.get_or_init(|| {
+        Regex::new(concat!(
+            r"(?is)<(think|thinking|reasoning|thought)>.*?</(think|thinking|reasoning|thought)>",
+            r"|^.*?</(think|thinking|reasoning)>",                                  // opening tag swallowed by the template
+            r"|<\|channel\|>analysis<\|message\|>.*?<\|(end|return)\|>(<\|start\|>assistant)?",  // gpt-oss / harmony
+            r"|<\|channel\|>final<\|message\|>",
+        ))
+        .unwrap()
+    })
 }
 
 /// Remove reasoning blocks emitted by "thinking" models.
 pub fn strip_thinking(s: &str) -> String {
-    think_rx().replace_all(s, "").trim().to_string()
+    let t = think_rx().replace_all(s, "");
+    // a reasoning block that never closed (cut off by the token limit): nothing usable follows it
+    let lower = t.to_lowercase();
+    for open in ["<think>", "<thinking>", "<reasoning>"] {
+        if let Some(i) = lower.find(open) {
+            return t[..i].trim().to_string();
+        }
+    }
+    t.trim().to_string()
 }
 
 fn strip_fence(s: &str) -> &str {
@@ -366,6 +385,15 @@ mod tests {
         let c = parse_chunk_response("<think>hmm {not json}</think>{\"translations\":[{\"text\":\"z\"}]}").unwrap();
         assert_eq!(c, vec![(0, "z".into())]);
         assert!(parse_chunk_response("sorry, I cannot").is_none());
+    }
+
+    #[test]
+    fn thinking_formats_are_stripped() {
+        assert_eq!(strip_thinking("<think>\nlet me see\n</think>\n\nOlá"), "Olá");
+        assert_eq!(strip_thinking("reasoning without opener\n</think>Olá"), "Olá");
+        assert_eq!(strip_thinking("<THINKING>x</THINKING>Olá"), "Olá");
+        assert_eq!(strip_thinking("<|channel|>analysis<|message|>hmm<|end|><|start|>assistant<|channel|>final<|message|>Olá"), "Olá");
+        assert_eq!(strip_thinking("<think>cut off while thinking"), "");
     }
 
     #[test]

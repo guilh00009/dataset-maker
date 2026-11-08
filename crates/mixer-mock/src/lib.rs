@@ -49,6 +49,10 @@ pub struct MockConfig {
     pub reject_response_format: bool,
     /// Also alter words the dictionary does not know (so arbitrary real text counts as "translated").
     pub pseudo_unknown: bool,
+    /// Simulate a thinking model: every answer starts with a `<think>` block of about this many tokens.
+    pub think_tokens: u64,
+    /// Whether `chat_template_kwargs.enable_thinking=false` turns the thinking off (Qwen3 style).
+    pub think_honors_switch: bool,
     pub seed: u64,
 }
 
@@ -69,6 +73,8 @@ impl Default for MockConfig {
             rate_untranslated: 0.0,
             reject_response_format: false,
             pseudo_unknown: false,
+            think_tokens: 0,
+            think_honors_switch: true,
             seed: 1,
         }
     }
@@ -309,6 +315,10 @@ async fn chat(State(s): State<Arc<MockState>>, headers: HeaderMap, Json(body): J
         content = tr(&user);
     }
     s.items.fetch_add(items, Ordering::SeqCst);
+    let thinking_off = body.pointer("/chat_template_kwargs/enable_thinking") == Some(&json!(false));
+    if cfg.think_tokens > 0 && !(cfg.think_honors_switch && thinking_off) {
+        content = format!("<think>\n{}\n</think>\n\n{content}", "hmm let me think about this carefully. ".repeat((cfg.think_tokens as usize * 36 / 100 / 38).max(1)));
+    }
 
     let mut completion_tokens = approx_tokens(&content);
     let mut finish = "stop";

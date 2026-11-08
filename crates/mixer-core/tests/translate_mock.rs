@@ -240,3 +240,44 @@ async fn cancel_stops_work() {
         _ => panic!("must be cancelled"),
     }
 }
+
+
+fn think_mock(think_tokens: u64, honors: bool) -> MockConfig {
+    MockConfig { base_latency_ms: 1, ms_per_token: 0, think_tokens, think_honors_switch: honors, ..Default::default() }
+}
+
+#[tokio::test]
+async fn thinking_model_that_honours_the_off_switch() {
+    let (url, _m) = start(think_mock(2000, true)).await;
+    let r = recipe(&url, "mock-translator-7b"); // default: thinking off
+    let t = Translator::new(&r, None, Arc::new(Journal::open_memory().unwrap()), Ctl::new()).unwrap();
+    match t.translate(sample(1)).await {
+        Translated::Ok(s) => {
+            assert_translated(&s);
+            assert!(!s.messages.iter().any(|m| m.content.contains("think")), "no reasoning leaks into the data");
+        }
+        Translated::Failed(e) => panic!("{e}"),
+    }
+}
+
+#[tokio::test]
+async fn always_thinking_model_needs_thinking_allowed() {
+    let (url, _m) = start(think_mock(2500, false)).await;
+    // thinking "off" cannot stop this model, and the output budget has no room for 2500 reasoning tokens
+    let mut r = recipe(&url, "mock-translator-7b");
+    r.translate.max_retries = 0;
+    let t = Translator::new(&r, None, Arc::new(Journal::open_memory().unwrap()), Ctl::new()).unwrap();
+    assert!(matches!(t.translate(sample(1)).await, Translated::Failed(_)));
+    // with thinking allowed the budget is extended, the reasoning is stripped and the translation is clean
+    r.translate.thinking = mixer_core::recipe::Thinking::Allow;
+    r.translate.thinking_tokens = 4000;
+    r.translate.context_budget = 8192;
+    let t = Translator::new(&r, None, Arc::new(Journal::open_memory().unwrap()), Ctl::new()).unwrap();
+    match t.translate(sample(2)).await {
+        Translated::Ok(s) => {
+            assert_translated(&s);
+            assert!(!s.messages.iter().any(|m| m.content.contains("think") || m.content.contains("hmm")));
+        }
+        Translated::Failed(e) => panic!("{e}"),
+    }
+}

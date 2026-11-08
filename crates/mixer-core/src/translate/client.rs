@@ -86,6 +86,8 @@ pub struct ChatRequest {
     pub max_tokens: u32,
     /// JSON schema to force structured output (OpenAI `response_format: json_schema`).
     pub json_schema: Option<Value>,
+    /// Ask the server to skip reasoning (`chat_template_kwargs.enable_thinking = false`).
+    pub disable_thinking: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -171,6 +173,9 @@ impl LlmClient {
                 "type": "json_schema",
                 "json_schema": {"name": "translations", "strict": true, "schema": schema},
             });
+        }
+        if r.disable_thinking {
+            body["chat_template_kwargs"] = json!({"enable_thinking": false});
         }
         let v = self.send(self.req(reqwest::Method::POST, &format!("{}/chat/completions", self.base)).json(&body)).await?;
         let choice = v.get("choices").and_then(|c| c.get(0)).ok_or_else(|| LlmError::BadResponse("no choices".into()))?;
@@ -263,6 +268,7 @@ pub async fn test_connection(base_url: &str, model: &str, token: Option<String>)
         temperature: 0.0,
         max_tokens: 64,
         json_schema: None,
+        disable_thinking: false,
     };
     match client.chat(&req).await {
         Ok(r) => {

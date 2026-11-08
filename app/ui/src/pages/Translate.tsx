@@ -146,6 +146,11 @@ function Settings() {
             <Pick label="If a row cannot be translated" value={t.on_fail} onChange={(v) => set({ on_fail: v })} minWidth="16rem" options={[{ value: 'drop', label: 'Leave it out of the export' }, { value: 'keep_original', label: 'Keep it in the original language' }]} />
             <Pick label="Structured output" value={t.structured} onChange={(v) => set({ structured: v })} minWidth="16rem" options={[{ value: 'auto', label: 'Automatic (JSON schema if supported)' }, { value: 'on', label: 'Always request a JSON schema' }, { value: 'off', label: 'Never (prompt only)' }]} />
           </Stack>
+          <Stack direction="row" columnGap="l" rowGap="m" wrap vAlign="end">
+            <Pick label="Thinking models" value={t.thinking} onChange={(v) => set({ thinking: v })} minWidth="20rem" description="Reasoning is always removed from the result"
+              options={[{ value: 'off', label: 'Ask the server not to think (faster)' }, { value: 'allow', label: 'Let the model think (extra output budget)' }]} />
+            {t.thinking === 'allow' ? <NumberField label="Tokens reserved for thinking" min={256} step={500} value={t.thinking_tokens} onValueChange={(v: number | null) => set({ thinking_tokens: Math.max(256, n(v, 3000)) })} description="Added to every request's output limit" /> : null}
+          </Stack>
           <Textarea label="Extra instructions" rows={3} resize="vertical" placeholder="Use informal Brazilian Portuguese. Keep roleplay actions between *asterisks*." value={t.instructions} onChange={(e) => set({ instructions: e.target.value })} />
           <Textarea label="Glossary" rows={3} resize="vertical" placeholder={'shop = loja\nmana = mana'} value={t.glossary} onChange={(e) => set({ glossary: e.target.value })} description="One “term = translation” per line" />
         </Stack>

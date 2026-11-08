@@ -410,6 +410,15 @@ pub enum OnFail {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum Thinking {
+    /// Ask the server not to think (Qwen3 `enable_thinking=false`, `/no_think`) and still strip any reasoning.
+    Off,
+    /// Let the model think: extra output budget is added and reasoning is stripped from the answer.
+    Allow,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Structured {
     /// Try `response_format` json_schema first; remember if the server rejects it.
     Auto,
@@ -472,6 +481,11 @@ pub struct TranslateOptions {
     pub on_fail: OnFail,
     #[serde(default = "default_structured")]
     pub structured: Structured,
+    #[serde(default = "default_thinking")]
+    pub thinking: Thinking,
+    /// Extra output tokens per request reserved for reasoning when `thinking = allow`.
+    #[serde(default = "default_thinking_tokens")]
+    pub thinking_tokens: u32,
 }
 
 fn default_base_url() -> String {
@@ -510,6 +524,12 @@ fn default_output_mode() -> OutputMode {
 fn default_on_fail() -> OnFail {
     OnFail::Drop
 }
+fn default_thinking() -> Thinking {
+    Thinking::Off
+}
+fn default_thinking_tokens() -> u32 {
+    3000
+}
 fn default_structured() -> Structured {
     Structured::Auto
 }
@@ -539,6 +559,8 @@ impl Default for TranslateOptions {
             output_mode: default_output_mode(),
             on_fail: default_on_fail(),
             structured: default_structured(),
+            thinking: default_thinking(),
+            thinking_tokens: default_thinking_tokens(),
         }
     }
 }

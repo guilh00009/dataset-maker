@@ -54,6 +54,7 @@ pub fn estimate(
         &t.instructions,
         &t.glossary,
         true,
+        false,
     ));
 
     // Very large mixes are estimated from an even subset and scaled up.

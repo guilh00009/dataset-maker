@@ -11,7 +11,7 @@ use crate::export::{SampleTranslator, Translated};
 use crate::jobs::{Ctl, Progress, Update};
 use crate::mix::{MixPlan, SourceData};
 use crate::model::{Role, Sample, est_tokens};
-use crate::recipe::{Recipe, Structured, TranslateOptions};
+use crate::recipe::{Recipe, Structured, Thinking, TranslateOptions};
 use anyhow::{Result, bail};
 use client::{ChatRequest, ChatResponse, LlmClient, LlmError};
 use futures::future::{BoxFuture, join_all};
@@ -215,8 +215,9 @@ impl Translator {
         if self.cfg.max_output_tokens > 0 {
             return self.cfg.max_output_tokens;
         }
-        let want = (est_payload as f64 * 2.2) as u32 + 96;
-        let room = (self.cfg.context_budget as i64 - est_total_in as i64).max(64) as u32;
+        let think = if self.cfg.thinking == Thinking::Allow { self.cfg.thinking_tokens } else { 0 };
+        let want = (est_payload as f64 * 2.2) as u32 + 96 + think;
+        let room = (self.cfg.context_budget as i64 - est_total_in as i64).max(64) as u32 + think;
         want.min(room).max(64)
     }
 
@@ -318,7 +319,7 @@ impl Translator {
     // ───────────── segments ─────────────
 
     async fn translate_single(&self, src: &str, expected: &[usize], key: u64) -> std::result::Result<String, String> {
-        let sys = prompt::system_prompt(&self.src, &self.tgt, &self.cfg.instructions, &self.cfg.glossary, false);
+        let sys = prompt::system_prompt(&self.src, &self.tgt, &self.cfg.instructions, &self.cfg.glossary, false, self.cfg.thinking == Thinking::Off);
         let est_payload = est_tokens(src);
         let est_total = est_payload + est_tokens(&sys) + 8;
         let mut last = String::from("no attempt");
@@ -328,6 +329,7 @@ impl Translator {
                 temperature: (self.cfg.temperature + 0.15 * attempt as f32).min(1.0),
                 max_tokens: self.out_tokens(est_total, est_payload),
                 json_schema: None,
+                disable_thinking: self.cfg.thinking == Thinking::Off,
             };
             match self.call(req).await {
                 Ok(r) => {
@@ -363,7 +365,7 @@ impl Translator {
         }
         let items: Vec<(usize, &str)> = idxs.iter().enumerate().map(|(k, &i)| (k, segs[i].src.as_str())).collect();
         let user = prompt::chunk_user_message(&items);
-        let sys = prompt::system_prompt(&self.src, &self.tgt, &self.cfg.instructions, &self.cfg.glossary, true);
+        let sys = prompt::system_prompt(&self.src, &self.tgt, &self.cfg.instructions, &self.cfg.glossary, true, self.cfg.thinking == Thinking::Off);
         let est_payload = est_tokens(&user);
         let est_total = est_payload + est_tokens(&sys) + 8;
         let schema = if self.structured_ok.load(Ordering::Relaxed) { Some(prompt::json_schema()) } else { None };
@@ -372,6 +374,7 @@ impl Translator {
             temperature: self.cfg.temperature,
             max_tokens: self.out_tokens(est_total, est_payload),
             json_schema: schema,
+            disable_thinking: self.cfg.thinking == Thinking::Off,
         };
         let mut done: Vec<(usize, std::result::Result<String, String>)> = Vec::new();
         let mut redo: Vec<usize> = Vec::new();
